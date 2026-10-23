@@ -289,13 +289,19 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCommandDesk(x: 
     drawPerson(cx,y+h*.79f,Amber,.9f)
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBeds(x: Float,y: Float,w: Float,h: Float) {
+    // Metal bunk frames, pillows, blankets, ladders and wall lamps.
     for (i in 0..1) {
-        val bx=x+w*(.15f+i*.48f)
-        drawRoundRect(Color(0xFF35443A), Offset(bx,y+h*.2f), Size(w*.32f,h*.48f), CornerRadius(4f))
-        drawRoundRect(Color(0xFF82938A), Offset(bx+4f,y+h*.23f), Size(w*.24f,h*.12f), CornerRadius(3f))
-        drawRoundRect(Color(0xFF527D5B), Offset(bx+4f,y+h*.37f), Size(w*.24f,h*.26f), CornerRadius(3f))
+        val bx=x+w*(.12f+i*.49f)
+        drawRoundRect(Color(0xFF26372C), Offset(bx,y+h*.18f), Size(w*.34f,h*.49f), CornerRadius(4f))
+        drawRoundRect(Color(0xFF71867A), Offset(bx+3f,y+h*.20f), Size(w*.28f,h*.18f), CornerRadius(3f))
+        drawRoundRect(Color(0xFF416A4C), Offset(bx+3f,y+h*.40f), Size(w*.28f,h*.23f), CornerRadius(3f))
+        drawLine(Color(0xFF9BB1A0), Offset(bx,y+h*.18f), Offset(bx,y+h*.68f), 3f)
+        drawLine(Color(0xFF9BB1A0), Offset(bx+w*.34f,y+h*.18f), Offset(bx+w*.34f,y+h*.68f), 3f)
+        drawCircle(Amber.copy(alpha=.8f), 3f, Offset(bx+w*.17f,y+h*.12f))
+        for (r in 0..3) drawLine(Color(0xFFB4C8B7), Offset(bx+w*.37f,y+h*(.25f+r*.09f)), Offset(bx+w*.42f,y+h*(.25f+r*.09f)), 2f)
     }
-    drawPerson(x+w*.52f,y+h*.76f,Blue,.85f)
+    drawRoundRect(Color(0xFF28372C), Offset(x+w*.34f,y+h*.72f), Size(w*.32f,h*.07f), CornerRadius(3f))
+    drawPerson(x+w*.52f,y+h*.82f,Blue,1.1f)
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMachine(x: Float,y: Float,w: Float,h: Float,c: Color) {
     drawRoundRect(Color(0xFF34453A), Offset(x+w*.25f,y+h*.2f), Size(w*.5f,h*.5f), CornerRadius(5f))
