@@ -218,8 +218,19 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
             drawRoundRect(floor, Offset(left,top), Size(w,h), CornerRadius(8f))
             drawRoundRect(if (i == selected) Neon else if (isBuilt) Color(0xFF52765A) else Color(0xFF29382D),
                 Offset(left,top), Size(w,h), CornerRadius(8f), style = Stroke(if (i == selected) 3f else 1.4f))
-            // floor plates
-            for (j in 1..3) drawLine(Color(0xFF314238), Offset(left+8f,top+h*j/4f), Offset(left+w-8f,top+h*j/4f), 1f)
+            // Layered industrial walls, metal floor plates, overhead conduit and ceiling lights.
+            drawRoundRect(Color(0xFF26352B), Offset(left+4f,top+5f), Size(w-8f,h*.17f), CornerRadius(4f))
+            for (j in 1..4) drawLine(Color(0xFF314238), Offset(left+8f,top+h*j/5f), Offset(left+w-8f,top+h*j/5f), 1f)
+            drawLine(Color(0xFF63766A), Offset(left+7f,top+5f), Offset(left+w-7f,top+5f), 2f)
+            drawLine(Color(0xFF516457), Offset(left+8f,top+h*.15f), Offset(left+w-8f,top+h*.15f), 2f)
+            // Small ceiling lamps and wall-mounted service panels.
+            for (lamp in 0..2) {
+                val lx=left+w*(.22f+lamp*.28f)
+                drawRoundRect(Color(0xFF9CB6A2), Offset(lx,top+8f), Size(w*.12f,3f), CornerRadius(2f))
+                drawRoundRect(Neon.copy(alpha=.12f), Offset(lx-3f,top+5f), Size(w*.12f+6f,9f), CornerRadius(3f))
+            }
+            drawRoundRect(Color(0xFF0A120D), Offset(left+w*.04f,top+h*.22f), Size(w*.07f,h*.18f), CornerRadius(2f))
+            drawRoundRect(Color(0xFF53685A), Offset(left+w*.05f,top+h*.24f), Size(w*.05f,h*.12f), CornerRadius(2f))
             // wall braces
             drawLine(Wall, Offset(left+4f,top+4f), Offset(left+w-4f,top+4f), 3f)
             when (i) {
@@ -258,13 +269,20 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawDoor(x: Float, 
     drawLine(color, Offset(x+2f,y+2f), Offset(x+w-2f,y+2f), 2f)
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPerson(x: Float, y: Float, color: Color, scale: Float) {
-    drawCircle(Color(0xFF050806), 8f*scale, Offset(x,y+3f*scale))
-    drawCircle(Color(0xFFE2C7A5), 3.2f*scale, Offset(x,y-5f*scale))
-    drawRoundRect(color, Offset(x-4f*scale,y-2f*scale), Size(8f*scale,10f*scale), CornerRadius(2f*scale))
-    drawLine(Color(0xFF0A0F0B), Offset(x-2f*scale,y+7f*scale), Offset(x-3f*scale,y+11f*scale), 2f*scale, cap=StrokeCap.Round)
-    drawLine(Color(0xFF0A0F0B), Offset(x+2f*scale,y+7f*scale), Offset(x+3f*scale,y+11f*scale), 2f*scale, cap=StrokeCap.Round)
-    drawLine(color, Offset(x-4f*scale,y+1f*scale), Offset(x-7f*scale,y+5f*scale), 2f*scale, cap=StrokeCap.Round)
-    drawLine(color, Offset(x+4f*scale,y+1f*scale), Offset(x+7f*scale,y+4f*scale), 2f*scale, cap=StrokeCap.Round)
+    // Small but readable survivor sprite: shadow, boots, legs, jacket, arms, head, hair and backpack.
+    drawOval(Color(0x99000000), Offset(x-8f*scale,y+10f*scale), Size(16f*scale,5f*scale))
+    drawRoundRect(Color(0xFF111713), Offset(x-5f*scale,y+4f*scale), Size(4f*scale,9f*scale), CornerRadius(2f*scale))
+    drawRoundRect(Color(0xFF111713), Offset(x+1f*scale,y+4f*scale), Size(4f*scale,9f*scale), CornerRadius(2f*scale))
+    drawRoundRect(Color(0xFF59675B), Offset(x-6f*scale,y+10f*scale), Size(5f*scale,2.5f*scale), CornerRadius(1f*scale))
+    drawRoundRect(Color(0xFF59675B), Offset(x+1f*scale,y+10f*scale), Size(5f*scale,2.5f*scale), CornerRadius(1f*scale))
+    drawRoundRect(Color(0xFF29382E), Offset(x+3.5f*scale,y-2f*scale), Size(4f*scale,8f*scale), CornerRadius(1.5f*scale))
+    drawRoundRect(color, Offset(x-5f*scale,y-4f*scale), Size(10f*scale,10f*scale), CornerRadius(2.5f*scale))
+    drawLine(Color(0xFFD3E2D6), Offset(x,y-3f*scale), Offset(x,y+4f*scale), 1f*scale)
+    drawLine(color.copy(alpha=.75f), Offset(x-4f*scale,y-1f*scale), Offset(x-8f*scale,y+4f*scale), 2.5f*scale, cap=StrokeCap.Round)
+    drawLine(color.copy(alpha=.75f), Offset(x+4f*scale,y-1f*scale), Offset(x+7f*scale,y+3f*scale), 2.5f*scale, cap=StrokeCap.Round)
+    drawCircle(Color(0xFFE2C7A5), 3.7f*scale, Offset(x,y-7f*scale))
+    drawArc(Color(0xFF3B3026), 180f, 180f, false, Offset(x-3.8f*scale,y-10.7f*scale), Size(7.6f*scale,5f*scale), style=Stroke(2f*scale))
+    drawCircle(Color(0xFF111713), 1f*scale, Offset(x+1.2f*scale,y-7f*scale))
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReactor(x: Float,y: Float,w: Float,h: Float) {
     val cx=x+w/2; val cy=y+h*.4f
