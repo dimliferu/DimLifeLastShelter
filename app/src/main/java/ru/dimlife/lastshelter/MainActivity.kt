@@ -359,7 +359,7 @@ private fun MiniResource(icon: String, value: Int, modifier: Modifier) {
 
 @Composable
 private fun BuildScreen(scrap: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, build: (Int) -> Unit) {
-    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp)) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp)) {
         Text("МОДЕРНИЗАЦИЯ УБЕЖИЩА", color = Neon, fontSize = 17.sp, fontWeight = FontWeight.Black)
         Text("Металлолом: $scrap  •  Выбирай модули, которые помогут выжить.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
         Spacer(Modifier.height(14.dp))
@@ -384,7 +384,7 @@ private fun BuildCard(icon: String, title: String, desc: String, cost: Int, buil
 }
 @Composable
 private fun SurfaceScreen(scrap: Int, survivors: Int, onExplore: () -> Unit) {
-    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("ЗАПРЕТНАЯ ЗОНА", color = Neon, fontSize = 18.sp, fontWeight = FontWeight.Black)
         Text("ПОВЕРХНОСТЬ • СЕКТОР 7G", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         Canvas(Modifier.fillMaxWidth().height(240.dp).background(Color(0xFF09120D), RoundedCornerShape(12.dp))) {
