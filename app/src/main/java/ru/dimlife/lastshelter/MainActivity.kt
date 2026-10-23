@@ -7,7 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,56 +30,48 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.min
 
-private val Void = Color(0xFF070B09)
-private val Panel = Color(0xFF111A15)
-private val Panel2 = Color(0xFF17231B)
-private val Neon = Color(0xFF73FF8A)
-private val Muted = Color(0xFF8A9A8E)
-private val White = Color(0xFFE8F2E9)
-private val Alert = Color(0xFFFFC857)
-private val Red = Color(0xFFFF6D6D)
+private val Void = Color(0xFF060A08)
+private val Wall = Color(0xFF334139)
+private val Floor = Color(0xFF17221B)
+private val FloorLight = Color(0xFF202E25)
+private val Neon = Color(0xFF79FF91)
+private val TextWhite = Color(0xFFEAF4EC)
+private val Muted = Color(0xFF91A096)
+private val Amber = Color(0xFFFFC65C)
+private val Blue = Color(0xFF76D8FF)
+private val Red = Color(0xFFFF7474)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = Void) {
-                    LastShelterGame(applicationContext)
-                }
-            }
-        }
+        setContent { MaterialTheme { Surface(Modifier.fillMaxSize(), color = Void) { ShelterGame(applicationContext) } } }
     }
 }
 
-private data class Room(val name: String, val icon: String, val cost: Int, val description: String)
-private val roomCatalog = listOf(
-    Room("Фильтрация", "◈", 20, "Вода +8 за день"),
-    Room("Ферма", "▦", 30, "Провизия +8 за день"),
-    Room("Медблок", "+", 35, "Поддерживает здоровье"),
-    Room("Мастерская", "⚙", 25, "Открывает улучшения")
-)
+private data class Chamber(val name: String, val kind: Int, val cost: Int, val built: Boolean = false)
+private val roomNames = listOf("РЕАКТОР", "КОМАНДНЫЙ ЦЕНТР", "ЖИЛОЙ БЛОК", "ФИЛЬТР ВОДЫ", "ФЕРМА", "МЕДБЛОК")
 
 @Composable
-private fun LastShelterGame(context: Context) {
+private fun ShelterGame(context: Context) {
     val prefs = remember { context.getSharedPreferences("last_shelter_save", Context.MODE_PRIVATE) }
     var power by remember { mutableIntStateOf(prefs.getInt("power", 72)) }
     var water by remember { mutableIntStateOf(prefs.getInt("water", 64)) }
@@ -87,267 +79,350 @@ private fun LastShelterGame(context: Context) {
     var food by remember { mutableIntStateOf(prefs.getInt("food", 35)) }
     var day by remember { mutableIntStateOf(prefs.getInt("day", 1)) }
     var scrap by remember { mutableIntStateOf(prefs.getInt("scrap", 55)) }
-    var tab by remember { mutableStateOf("БАЗА") }
-    var message by remember { mutableStateOf("Сканер поверхности молчит. Убежище ждёт приказов.") }
-    var eventCount by remember { mutableIntStateOf(0) }
-    val builtRooms = remember {
-        mutableStateListOf<String>().apply {
-            addAll(prefs.getStringSet("rooms", setOf("Командный центр", "Реактор")) ?: setOf("Командный центр", "Реактор"))
-        }
-    }
+    var survivors by remember { mutableIntStateOf(prefs.getInt("survivors", 4)) }
+    var selected by remember { mutableIntStateOf(1) }
+    var builtWater by remember { mutableStateOf(prefs.getBoolean("built_water", false)) }
+    var builtFarm by remember { mutableStateOf(prefs.getBoolean("built_farm", false)) }
+    var builtMed by remember { mutableStateOf(prefs.getBoolean("built_med", false)) }
+    var message by remember { mutableStateOf("Смена дежурных завершена. Все системы ожидают проверки.") }
+    var tab by remember { mutableStateOf("УБЕЖИЩЕ") }
 
     fun save() {
         prefs.edit().putInt("power", power).putInt("water", water).putInt("oxygen", oxygen)
-            .putInt("food", food).putInt("day", day).putInt("scrap", scrap)
-            .putStringSet("rooms", builtRooms.toSet()).apply()
+            .putInt("food", food).putInt("day", day).putInt("scrap", scrap).putInt("survivors", survivors)
+            .putBoolean("built_water", builtWater).putBoolean("built_farm", builtFarm).putBoolean("built_med", builtMed).apply()
     }
-    fun report(text: String) { message = text; save() }
+    fun log(s: String) { message = s; save() }
 
-    Column(
-        modifier = Modifier.fillMaxSize().background(Void).verticalScroll(rememberScrollState()).padding(bottom = 18.dp)
-    ) {
-        Header(day, scrap)
+    Column(Modifier.fillMaxSize().background(Void)) {
+        Header(day, scrap, survivors)
         when (tab) {
-            "БАЗА" -> {
-                BunkerMap(builtRooms)
-                SectionLabel("СИСТЕМЫ ЖИЗНЕОБЕСПЕЧЕНИЯ", "LIVE MONITOR")
-                Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    ResourceRow("ЭНЕРГИЯ", power, "⚡")
-                    ResourceRow("ВОДА", water, "◈")
-                    ResourceRow("КИСЛОРОД", oxygen, "◎")
-                    ResourceRow("ПРОВИЗИЯ", food, "▦")
+            "УБЕЖИЩЕ" -> {
+                Text("ЖИЛОЙ СЕКТОР  /  КАМЕРА НАБЛЮДЕНИЯ", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 8.dp))
+                Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
+                    ShelterWorld(
+                        selected = selected, builtWater = builtWater, builtFarm = builtFarm, builtMed = builtMed,
+                        onSelect = { selected = it }
+                    )
                 }
-                SectionLabel("ЖУРНАЛ СИСТЕМЫ", "RECENT EVENT")
-                Column(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(Panel, RoundedCornerShape(12.dp)).padding(15.dp)) {
-                    Text("● SYSTEM MESSAGE", color = Neon, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    Spacer(Modifier.height(7.dp))
-                    Text(message, color = White, fontSize = 13.sp, lineHeight = 19.sp)
-                }
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    ActionButton("⚡  ОБСЛУЖИТЬ РЕАКТОР", "Затрачено 5 металлолома. Энергосистема стабилизирована.") {
-                        if (scrap >= 5) { scrap -= 5; power = (power + 18).coerceAtMost(100); report("Реактор обслужен. Заряд энергии +18%.") }
-                        else report("Недостаточно металлолома для ремонта реактора.")
+                SelectedRoom(selected, builtWater, builtFarm, builtMed, message)
+                ResourceStrip(power, water, oxygen, food)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GameButton("СМЕНА ДНЯ", Modifier.weight(1f), Amber) {
+                        day++
+                        power = (power - 8).coerceAtLeast(0)
+                        oxygen = (oxygen - 6).coerceAtLeast(0)
+                        water = (water - if (builtWater) 2 else 7).coerceAtLeast(0)
+                        food = (food + (if (builtFarm) 6 else -8)).coerceIn(0, 100)
+                        if (food == 0 && survivors > 1) survivors--
+                        log("День $day. Выжившие: $survivors. Проверь системы и запасы.")
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        SmallAction("◈  ОЧИСТИТЬ ВОДУ", Modifier.weight(1f)) {
-                            if (power >= 5) { power -= 5; water = (water + 16).coerceAtMost(100); report("Фильтры запущены. Запас воды +16%.") }
-                            else report("Недостаточно энергии для запуска фильтров.")
-                        }
-                        SmallAction("☾  СМЕНА ДНЯ", Modifier.weight(1f), Alert) {
-                            day += 1
-                            power = (power - 8).coerceAtLeast(0)
-                            oxygen = (oxygen - 7).coerceAtLeast(0)
-                            water = (water - (if ("Фильтрация" in builtRooms) 2 else 6)).coerceAtLeast(0)
-                            food = (food + (if ("Ферма" in builtRooms) 3 else -8)).coerceIn(0, 100)
-                            if (day % 3 == 0) { scrap += 8; report("День $day. Разобрали обломки в техническом тоннеле: металлолом +8.") }
-                            else report("День $day завершён. Системы потребили ресурсы. Проверь запасы.")
-                            save()
-                        }
+                    GameButton("РЕАКТОР +", Modifier.weight(1f), Neon) {
+                        if (scrap >= 5) { scrap -= 5; power = (power + 20).coerceAtMost(100); log("Реактор обслужен. Энергия +20%.") }
+                        else log("Не хватает металлолома для обслуживания.")
                     }
                 }
             }
-            "СТРОЙКА" -> {
-                SectionLabel("РАСШИРЕНИЕ УБЕЖИЩА", "BUILD MODULE")
-                Text("Каждая комната меняет экономику базы. Выбирай, что поможет пережить следующий день.", color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(horizontal = 16.dp))
-                Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    roomCatalog.forEach { room ->
-                        val built = room.name in builtRooms
-                        Row(
-                            modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(12.dp))
-                                .border(1.dp, if (built) Neon.copy(alpha = 0.5f) else Color(0xFF26352A), RoundedCornerShape(12.dp))
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(modifier = Modifier.size(48.dp).background(Panel2, RoundedCornerShape(9.dp)), contentAlignment = Alignment.Center) {
-                                Text(room.icon, color = Neon, fontSize = 23.sp, fontWeight = FontWeight.Black)
-                            }
-                            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text(room.name.uppercase(), color = White, fontSize = 12.sp, fontWeight = FontWeight.Black)
-                                Text(room.description, color = Muted, fontSize = 11.sp)
-                                Text(if (built) "МОДУЛЬ УСТАНОВЛЕН" else "СТОИМОСТЬ: ◈ ${room.cost} МЕТАЛЛА", color = if (built) Neon else Alert, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                            }
-                            if (built) Text("✓", color = Neon, fontSize = 20.sp, fontWeight = FontWeight.Black)
-                            else Button(
-                                onClick = {
-                                    if (scrap >= room.cost) {
-                                        scrap -= room.cost
-                                        builtRooms.add(room.name)
-                                        report("Модуль «${room.name}» построен. Его эффект начнёт действовать при следующей смене.")
-                                    } else report("Не хватает металлолома. Отправься на разведку.")
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Neon, contentColor = Void),
-                                shape = RoundedCornerShape(7.dp)
-                            ) { Text("СТРОИТЬ", fontSize = 9.sp, fontWeight = FontWeight.Black) }
-                        }
-                    }
-                }
-                SectionLabel("ТЕКУЩИЕ ПРИОРИТЕТЫ", "TACTICAL NOTE")
-                Text("Рекомендуется построить ферму, прежде чем запасы провизии упадут до нуля.", color = Alert, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            }
-            "РАЗВЕДКА" -> {
-                SectionLabel("ВЫХОД НА ПОВЕРХНОСТЬ", "EXPLORATION")
-                SurfaceCard {
-                    Text("СЕКТОР: СТАРЫЙ ГОРОД", color = Neon, fontSize = 11.sp, fontWeight = FontWeight.Black)
-                    Text("Радиационный фон нестабилен. За дверью шлюза могут быть полезные материалы — или то, что привело мир к гибели.", color = White, fontSize = 14.sp, lineHeight = 21.sp)
-                    Canvas(modifier = Modifier.fillMaxWidth().height(145.dp)) {
-                        val w = size.width
-                        val h = size.height
-                        for (i in 0..8) {
-                            val x = w * i / 8f
-                            drawLine(Color(0xFF213C2A), Offset(x, 0f), Offset(x, h), 1f)
-                        }
-                        for (i in 0..5) {
-                            val y = h * i / 5f
-                            drawLine(Color(0xFF213C2A), Offset(0f, y), Offset(w, y), 1f)
-                        }
-                        val skyline = Path().apply {
-                            moveTo(0f, h * .82f); lineTo(w * .12f, h * .82f); lineTo(w * .12f, h * .35f)
-                            lineTo(w * .22f, h * .35f); lineTo(w * .22f, h * .55f); lineTo(w * .35f, h * .55f)
-                            lineTo(w * .35f, h * .18f); lineTo(w * .48f, h * .18f); lineTo(w * .48f, h * .68f)
-                            lineTo(w * .62f, h * .68f); lineTo(w * .62f, h * .3f); lineTo(w * .78f, h * .3f)
-                            lineTo(w * .78f, h * .58f); lineTo(w, h * .58f)
-                        }
-                        drawPath(skyline, Neon.copy(alpha = .8f), style = Stroke(width = 3f, cap = StrokeCap.Square))
-                        drawCircle(Alert, radius = 6f, center = Offset(w * .8f, h * .13f))
-                    }
-                    Text("ПОСЛЕДНИЙ СИГНАЛ: 03:17 / ИСТОЧНИК НЕИЗВЕСТЕН", color = Muted, fontSize = 9.sp)
-                }
-                ActionButton("↗  ОТПРАВИТЬ РАЗВЕДГРУППУ", "Экспедиция вернулась.") {
-                    eventCount += 1
-                    when (eventCount % 3) {
-                        1 -> { scrap += 18; report("Экспедиция вернулась с металлоломом: +18. Ни одного живого человека не найдено.") }
-                        2 -> { scrap += 8; food = (food + 14).coerceAtMost(100); report("В заброшенном складе найдены консервы и детали. Провизия +14%, металл +8.") }
-                        else -> { oxygen = (oxygen - 8).coerceAtLeast(0); scrap += 25; report("Разведчики нашли редкие детали, но повредили фильтр шлюза. Металл +25, кислород -8%.") }
+            "СТРОИТЬ" -> BuildScreen(
+                scrap, builtWater, builtFarm, builtMed,
+                build = { kind ->
+                    when (kind) {
+                        0 -> if (!builtWater && scrap >= 20) { scrap -= 20; builtWater = true; log("Фильтрационная станция построена. Расход воды снижен.") } else log("Не хватает металлолома или модуль уже построен.")
+                        1 -> if (!builtFarm && scrap >= 30) { scrap -= 30; builtFarm = true; log("Гидропонная ферма запущена. Производство еды увеличено.") } else log("Не хватает металлолома или модуль уже построен.")
+                        else -> if (!builtMed && scrap >= 35) { scrap -= 35; builtMed = true; log("Медблок готов. Медики смогут лечить раненых.") } else log("Не хватает металлолома или модуль уже построен.")
                     }
                     save()
                 }
-                Text("Экспедиции доступны без ожидания. Каждый выход меняет состояние ресурсов и приносит новую запись в журнал.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            }
-            else -> {
-                SectionLabel("СИСТЕМНЫЙ ЖУРНАЛ", "ARCHIVE")
-                SurfaceCard {
-                    Text("ДЕНЬ $day — ТЕКУЩИЙ ОТЧЁТ", color = Neon, fontSize = 12.sp, fontWeight = FontWeight.Black)
-                    Text(message, color = White, fontSize = 14.sp, lineHeight = 21.sp)
-                    Spacer(Modifier.height(8.dp))
-                    Text("МЕТАЛЛОЛОМ: $scrap", color = Alert, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("МОДУЛИ: ${builtRooms.joinToString(", ")}", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
-                }
-                ActionButton("СОХРАНИТЬ ПРОГРЕСС", "Прогресс сохранён локально на устройстве.") { save(); report("Сохранение обновлено. Убежище будет ждать тебя.") }
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        BottomNav(tab) { tab = it }
-        Text("DIMLIFE SYSTEMS • BUILD 0.2.0", color = Color(0xFF53645A), fontSize = 9.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
-    }
-}
-
-@Composable
-private fun Header(day: Int, scrap: Int) {
-    Column(modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Column {
-                Text("DIMLIFE // SURVIVAL SYSTEM", color = Neon, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Text("LAST SHELTER", color = White, fontSize = 27.sp, fontWeight = FontWeight.Black)
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text("DAY %02d".format(day), color = Neon, fontSize = 12.sp, fontWeight = FontWeight.Black,
-                    modifier = Modifier.border(1.dp, Neon.copy(alpha = .7f), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 7.dp))
-                Spacer(Modifier.height(5.dp))
-                Text("◈ $scrap SCRAP", color = Alert, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-private fun BunkerMap(rooms: List<String>) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(Panel, RoundedCornerShape(14.dp))
-        .border(1.dp, Neon.copy(alpha = .3f), RoundedCornerShape(14.dp)).padding(14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text("SECTOR 01 / COMMAND DECK", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
-            Text("● ONLINE", color = Neon, fontSize = 9.sp, fontWeight = FontWeight.Black)
-        }
-        Canvas(modifier = Modifier.fillMaxWidth().height(210.dp).padding(top = 12.dp)) {
-            val cellW = size.width / 3f
-            val cellH = size.height / 2f
-            drawLine(Neon.copy(alpha = .45f), Offset(cellW / 2, cellH), Offset(cellW * 2.5f, cellH), 3f)
-            drawLine(Neon.copy(alpha = .45f), Offset(cellW * 1.5f, cellH / 2), Offset(cellW * 1.5f, cellH * 1.5f), 3f)
-            val rects = listOf(
-                floatArrayOf(.04f,.06f,.27f,.38f), floatArrayOf(.365f,.06f,.27f,.38f), floatArrayOf(.69f,.06f,.27f,.38f),
-                floatArrayOf(.04f,.56f,.27f,.38f), floatArrayOf(.365f,.56f,.27f,.38f), floatArrayOf(.69f,.56f,.27f,.38f)
             )
-            val labels = listOf("REACTOR", "COMMAND", "AIRLOCK", "WATER", "HABITAT", "STORAGE")
-            rects.forEachIndexed { i, r ->
-                val left = size.width * r[0]; val top = size.height * r[1]
-                val rw = size.width * r[2]; val rh = size.height * r[3]
-                val active = i == 0 || i == 1 || (i == 3 && "Фильтрация" in rooms) || (i == 4 && "Ферма" in rooms)
-                drawRoundRect(if (active) Color(0xFF183B23) else Color(0xFF111B15), Offset(left, top), Size(rw, rh), androidx.compose.ui.geometry.CornerRadius(10f))
-                drawRoundRect(if (active) Neon else Color(0xFF3D5143), Offset(left, top), Size(rw, rh), androidx.compose.ui.geometry.CornerRadius(10f), style = Stroke(if (active) 2f else 1f))
-                drawCircle(if (active) Neon else Muted, 4f, Offset(left + rw/2, top + rh*.34f))
-                val p = android.graphics.Paint().apply { color = if (active) android.graphics.Color.rgb(130,255,150) else android.graphics.Color.rgb(135,154,140); textSize = 10f; textAlign = android.graphics.Paint.Align.CENTER; typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD) }
-                drawContext.canvas.nativeCanvas.drawText(labels[i], left + rw/2, top + rh*.76f, p)
+            "ПОВЕРХНОСТЬ" -> SurfaceScreen(scrap, survivors, onExplore = {
+                if (survivors > 1) {
+                    survivors--
+                    scrap += 18
+                    food = (food + 12).coerceAtMost(100)
+                    survivors++
+                    log("Разведчики вернулись. Найдены детали (+18) и консервы (+12%).")
+                } else log("Недостаточно людей для безопасной экспедиции.")
+                save()
+            })
+            else -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
+                Text("ЖУРНАЛ УБЕЖИЩА", color = Neon, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                Spacer(Modifier.height(12.dp))
+                Text("ДЕНЬ $day  •  $survivors ВЫЖИВШИХ", color = Amber, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text(message, color = TextWhite, fontSize = 14.sp, lineHeight = 22.sp)
+                Spacer(Modifier.height(18.dp))
+                Text("СОСТОЯНИЕ СИСТЕМ", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                Spacer(Modifier.height(8.dp))
+                Text("Энергия $power%   •   Вода $water%   •   Кислород $oxygen%   •   Провизия $food%", color = TextWhite, fontSize = 13.sp, lineHeight = 22.sp)
+                Spacer(Modifier.height(16.dp))
+                GameButton("СОХРАНИТЬ ИГРУ", Modifier.fillMaxWidth(), Neon) { save(); log("Прогресс сохранён на этом устройстве.") }
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Text("СХЕМА УБЕЖИЩА • ${rooms.size} МОДУЛЕЙ АКТИВНО", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        BottomBar(tab) { tab = it }
     }
 }
 
 @Composable
-private fun SectionLabel(title: String, tag: String) {
-    Row(modifier = Modifier.fillMaxWidth().padding(start = 17.dp, end = 17.dp, top = 22.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(title, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Black)
-        Text(tag, color = Color(0xFF4F6655), fontSize = 8.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun ResourceRow(label: String, value: Int, symbol: String) {
-    Column(modifier = Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(10.dp)).padding(13.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text("$symbol  $label", color = White, fontSize = 12.sp, fontWeight = FontWeight.Black)
-            Text("$value%", color = if (value < 25) Alert else Neon, fontSize = 13.sp, fontWeight = FontWeight.Black)
+private fun Header(day: Int, scrap: Int, survivors: Int) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column {
+            Text("DIMLIFE // SURVIVAL SYSTEM", color = Neon, fontSize = 9.sp, fontWeight = FontWeight.Black)
+            Text("LAST SHELTER", color = TextWhite, fontSize = 25.sp, fontWeight = FontWeight.Black)
+            Text("ДЕНЬ $day  •  ЛЮДИ $survivors  •  МЕТАЛЛ $scrap", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
         }
-        Box(modifier = Modifier.fillMaxWidth().height(5.dp).background(Color(0xFF27332B), RoundedCornerShape(4.dp))) {
-            Box(modifier = Modifier.fillMaxWidth(value / 100f).height(5.dp).background(if (value < 25) Alert else Neon, RoundedCornerShape(4.dp)))
+        Column(horizontalAlignment = Alignment.End) {
+            Text("● LIVE", color = Neon, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Text("SECTOR 01", color = Muted, fontSize = 9.sp)
         }
     }
 }
 
 @Composable
-private fun SurfaceCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(Panel, RoundedCornerShape(14.dp))
-        .border(1.dp, Neon.copy(alpha = .25f), RoundedCornerShape(14.dp)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, onSelect: (Int) -> Unit) {
+    Canvas(
+        Modifier.fillMaxSize().background(Color(0xFF080E0A), RoundedCornerShape(12.dp))
+            .border(1.dp, Color(0xFF354A3A), RoundedCornerShape(12.dp))
+            .pointerInput(selected, builtWater, builtFarm, builtMed) {
+                detectTapGestures { p ->
+                    val x = p.x / size.width
+                    val y = p.y / size.height
+                    val col = (x * 3).toInt().coerceIn(0, 2)
+                    val row = (y * 2).toInt().coerceIn(0, 1)
+                    onSelect(row * 3 + col)
+                }
+            }
+    ) {
+        val cw = size.width / 3f
+        val ch = size.height / 2f
+        drawRect(Color(0xFF0A110C), size = size)
+        for (x in 0..12) drawLine(Color(0xFF14251A), Offset(size.width*x/12f,0f), Offset(size.width*x/12f,size.height), 1f)
+        for (y in 0..16) drawLine(Color(0xFF14251A), Offset(0f,size.height*y/16f), Offset(size.width,size.height*y/16f), 1f)
+        for (i in 0..5) {
+            val col = i % 3
+            val row = i / 3
+            val left = col*cw + 5f
+            val top = row*ch + 5f
+            val w = cw - 10f
+            val h = ch - 10f
+            val isBuilt = i == 0 || i == 1 || (i == 3 && builtWater) || (i == 4 && builtFarm) || (i == 5 && builtMed)
+            val floor = if (isBuilt) FloorLight else Color(0xFF111813)
+            drawRoundRect(floor, Offset(left,top), Size(w,h), CornerRadius(8f))
+            drawRoundRect(if (i == selected) Neon else if (isBuilt) Color(0xFF52765A) else Color(0xFF29382D),
+                Offset(left,top), Size(w,h), CornerRadius(8f), style = Stroke(if (i == selected) 3f else 1.4f))
+            // floor plates
+            for (j in 1..3) drawLine(Color(0xFF314238), Offset(left+8f,top+h*j/4f), Offset(left+w-8f,top+h*j/4f), 1f)
+            // wall braces
+            drawLine(Wall, Offset(left+4f,top+4f), Offset(left+w-4f,top+4f), 3f)
+            when (i) {
+                0 -> drawReactor(left, top, w, h)
+                1 -> drawCommandDesk(left, top, w, h)
+                2 -> drawBeds(left, top, w, h)
+                3 -> if (builtWater) drawMachine(left, top, w, h, Blue) else drawCrates(left, top, w, h)
+                4 -> if (builtFarm) drawFarm(left, top, w, h) else drawCrates(left, top, w, h)
+                5 -> if (builtMed) drawMedical(left, top, w, h) else drawCrates(left, top, w, h)
+            }
+            drawDoor(left+w*.42f, top+h-2f, w*.16f, Neon.copy(alpha=.8f))
+            val label = when (i) { 0 -> "РЕАКТОР"; 1 -> "УПРАВЛЕНИЕ"; 2 -> "ЖИЛОЙ БЛОК"; 3 -> "ВОДА"; 4 -> "ФЕРМА"; else -> "МЕДБЛОК" }
+            drawContext.canvas.nativeCanvas.drawText(label, left+w/2, top+h-12f,
+                android.graphics.Paint().apply { color = if (isBuilt) android.graphics.Color.rgb(130,255,150) else android.graphics.Color.rgb(132,151,137); textSize = min(11f, cw/13f); textAlign = android.graphics.Paint.Align.CENTER; typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD) })
+        }
+        // corridor and glowing connection nodes
+        drawLine(Neon.copy(alpha=.35f), Offset(cw*.5f, ch), Offset(cw*2.5f,ch), 4f)
+        drawLine(Neon.copy(alpha=.35f), Offset(cw*1.5f,ch*.5f), Offset(cw*1.5f,ch*1.5f), 4f)
+        drawCircle(Neon, 4f, Offset(cw*1.5f,ch))
+        // small survivors walking through the base
+        drawPerson(cw*.72f, ch*.74f, Neon, 1f)
+        drawPerson(cw*1.25f, ch*1.28f, Blue, .9f)
+        drawPerson(cw*2.38f, ch*1.25f, Amber, .95f)
+        drawPerson(cw*2.72f, ch*.73f, Neon, .85f)
+        // overhead status lights
+        drawCircle(Neon, 3f, Offset(size.width-15f, 14f))
+        drawCircle(Amber, 3f, Offset(size.width-26f, 14f))
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawDoor(x: Float, y: Float, w: Float, color: Color) {
+    drawRoundRect(Color(0xFF060907), Offset(x,y), Size(w,9f), CornerRadius(2f))
+    drawLine(color, Offset(x+2f,y+2f), Offset(x+w-2f,y+2f), 2f)
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPerson(x: Float, y: Float, color: Color, scale: Float) {
+    drawCircle(Color(0xFF050806), 8f*scale, Offset(x,y+3f*scale))
+    drawCircle(Color(0xFFE2C7A5), 3.2f*scale, Offset(x,y-5f*scale))
+    drawRoundRect(color, Offset(x-4f*scale,y-2f*scale), Size(8f*scale,10f*scale), CornerRadius(2f*scale))
+    drawLine(Color(0xFF0A0F0B), Offset(x-2f*scale,y+7f*scale), Offset(x-3f*scale,y+11f*scale), 2f*scale, cap=StrokeCap.Round)
+    drawLine(Color(0xFF0A0F0B), Offset(x+2f*scale,y+7f*scale), Offset(x+3f*scale,y+11f*scale), 2f*scale, cap=StrokeCap.Round)
+    drawLine(color, Offset(x-4f*scale,y+1f*scale), Offset(x-7f*scale,y+5f*scale), 2f*scale, cap=StrokeCap.Round)
+    drawLine(color, Offset(x+4f*scale,y+1f*scale), Offset(x+7f*scale,y+4f*scale), 2f*scale, cap=StrokeCap.Round)
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReactor(x: Float,y: Float,w: Float,h: Float) {
+    val cx=x+w/2; val cy=y+h*.4f
+    drawCircle(Color(0xFF0B130E), min(w,h)*.27f, Offset(cx,cy))
+    drawCircle(Neon.copy(alpha=.25f), min(w,h)*.24f, Offset(cx,cy))
+    drawCircle(Neon, min(w,h)*.18f, Offset(cx,cy), style=Stroke(3f))
+    drawCircle(Color(0xFFB6FFC2), min(w,h)*.09f, Offset(cx,cy))
+    for (a in 0..7) {
+        val angle=a*Math.PI/4
+        val x1=cx+kotlin.math.cos(angle).toFloat()*min(w,h)*.2f
+        val y1=cy+kotlin.math.sin(angle).toFloat()*min(w,h)*.2f
+        drawLine(Neon, Offset(x1,y1), Offset(cx+kotlin.math.cos(angle).toFloat()*min(w,h)*.3f,cy+kotlin.math.sin(angle).toFloat()*min(w,h)*.3f), 2f)
+    }
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCommandDesk(x: Float,y: Float,w: Float,h: Float) {
+    val cx=x+w/2
+    drawRoundRect(Color(0xFF09110D), Offset(x+w*.15f,y+h*.2f), Size(w*.7f,h*.38f), CornerRadius(5f))
+    drawRoundRect(Color(0xFF244D31), Offset(x+w*.2f,y+h*.24f), Size(w*.6f,h*.27f), CornerRadius(3f))
+    drawLine(Neon, Offset(x+w*.25f,y+h*.33f), Offset(x+w*.72f,y+h*.33f), 2f)
+    drawLine(Blue, Offset(x+w*.25f,y+h*.41f), Offset(x+w*.55f,y+h*.41f), 2f)
+    drawRoundRect(Wall, Offset(cx-w*.2f,y+h*.62f), Size(w*.4f,h*.12f), CornerRadius(3f))
+    drawPerson(cx,y+h*.79f,Amber,.9f)
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBeds(x: Float,y: Float,w: Float,h: Float) {
+    for (i in 0..1) {
+        val bx=x+w*(.15f+i*.48f)
+        drawRoundRect(Color(0xFF35443A), Offset(bx,y+h*.2f), Size(w*.32f,h*.48f), CornerRadius(4f))
+        drawRoundRect(Color(0xFF82938A), Offset(bx+4f,y+h*.23f), Size(w*.24f,h*.12f), CornerRadius(3f))
+        drawRoundRect(Color(0xFF527D5B), Offset(bx+4f,y+h*.37f), Size(w*.24f,h*.26f), CornerRadius(3f))
+    }
+    drawPerson(x+w*.52f,y+h*.76f,Blue,.85f)
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMachine(x: Float,y: Float,w: Float,h: Float,c: Color) {
+    drawRoundRect(Color(0xFF34453A), Offset(x+w*.25f,y+h*.2f), Size(w*.5f,h*.5f), CornerRadius(5f))
+    drawRoundRect(Color(0xFF0A120D), Offset(x+w*.31f,y+h*.27f), Size(w*.38f,h*.27f), CornerRadius(4f))
+    drawCircle(c, min(w,h)*.07f, Offset(x+w*.5f,y+h*.4f))
+    drawLine(c, Offset(x+w*.33f,y+h*.6f), Offset(x+w*.67f,y+h*.6f), 2f)
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCrates(x: Float,y: Float,w: Float,h: Float) {
+    for (i in 0..2) {
+        val bx=x+w*(.2f+(i%2)*.35f); val by=y+h*(.25f+(i/2)*.25f)
+        drawRect(Color(0xFF344638), Offset(bx,by), Size(w*.28f,h*.2f))
+        drawRect(Color(0xFF647A67), Offset(bx,by), Size(w*.28f,h*.2f), style=Stroke(2f))
+        drawLine(Color(0xFF647A67), Offset(bx,by), Offset(bx+w*.28f,by+h*.2f), 1f)
+    }
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFarm(x: Float,y: Float,w: Float,h: Float) {
+    for (i in 0..2) {
+        val yy=y+h*(.25f+i*.19f)
+        drawRoundRect(Color(0xFF2B4730), Offset(x+w*.18f,yy), Size(w*.64f,h*.12f), CornerRadius(3f))
+        for (j in 0..3) drawLine(Neon.copy(alpha=.8f), Offset(x+w*(.24f+j*.16f),yy+3f), Offset(x+w*(.24f+j*.16f),yy+h*.12f-2f), 2f)
+    }
+}
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMedical(x: Float,y: Float,w: Float,h: Float) {
+    drawRoundRect(Color(0xFF31443A), Offset(x+w*.2f,y+h*.24f), Size(w*.6f,h*.45f), CornerRadius(5f))
+    drawRect(Color(0xFF0C160F), Offset(x+w*.25f,y+h*.29f), Size(w*.5f,h*.35f))
+    drawRect(Red, Offset(x+w*.45f,y+h*.34f), Size(w*.1f,h*.25f))
+    drawRect(Red, Offset(x+w*.37f,y+h*.42f), Size(w*.26f,h*.08f))
 }
 
 @Composable
-private fun ActionButton(label: String, description: String, action: () -> Unit) {
-    Button(onClick = action, modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(52.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Neon, contentColor = Void), shape = RoundedCornerShape(8.dp)) {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black)
+private fun SelectedRoom(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, message: String) {
+    val name = roomNames[selected]
+    val status = when (selected) {
+        0 -> "РЕАКТОР • МОЩНОСТЬ 84% • ОБСЛУЖИВАНИЕ ДОСТУПНО"
+        1 -> "КОМАНДНЫЙ ЦЕНТР • СТАТУС: АКТИВЕН"
+        2 -> "ЖИЛОЙ БЛОК • 4 КОЙКИ • СМЕНА ДЕЖУРИТ"
+        3 -> if (builtWater) "ФИЛЬТР ВОДЫ • ПРОИЗВОДИТЕЛЬНОСТЬ НОРМА" else "НЕ ПОСТРОЕНО • ОТКРОЙ РАЗДЕЛ СТРОИТЕЛЬСТВА"
+        4 -> if (builtFarm) "ГИДРОПОНИКА • РАСТЕНИЯ РАСТУТ" else "НЕ ПОСТРОЕНО • ПРОВИЗИЯ НА ИСХОДЕ"
+        else -> if (builtMed) "МЕДБЛОК • ГОТОВ К ПРИЁМУ" else "НЕ ПОСТРОЕНО • МЕДИЦИНСКАЯ ПОМОЩЬ НЕДОСТУПНА"
+    }
+    Column(Modifier.fillMaxWidth().background(Color(0xFF0E1711)).padding(horizontal=14.dp, vertical=9.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).background(if (selected < 3 || (selected==3 && builtWater) || (selected==4 && builtFarm) || (selected==5 && builtMed)) Neon else Amber, RoundedCornerShape(4.dp)))
+            Spacer(Modifier.width(7.dp))
+            Text(name, color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Black)
+        }
+        Text(status, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
     }
 }
 
 @Composable
-private fun SmallAction(label: String, modifier: Modifier = Modifier, color: Color = Neon, action: () -> Unit) {
-    Button(onClick = action, modifier = modifier.height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel2, contentColor = color),
-        shape = RoundedCornerShape(8.dp)) {
-        Text(label, fontSize = 9.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, lineHeight = 12.sp)
+private fun ResourceStrip(power: Int, water: Int, oxygen: Int, food: Int) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        MiniResource("⚡", power, Modifier.weight(1f))
+        MiniResource("◈", water, Modifier.weight(1f))
+        MiniResource("◎", oxygen, Modifier.weight(1f))
+        MiniResource("▦", food, Modifier.weight(1f))
+    }
+}
+@Composable
+private fun MiniResource(icon: String, value: Int, modifier: Modifier) {
+    Column(modifier.background(Color(0xFF121B15), RoundedCornerShape(8.dp)).padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(icon, color = Neon, fontSize = 13.sp)
+        Text("$value%", color = if (value < 20) Red else TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Black)
+        Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0xFF29352C), RoundedCornerShape(2.dp))) {
+            Box(Modifier.fillMaxWidth(value.coerceIn(0,100)/100f).height(3.dp).background(if (value<20) Red else Neon, RoundedCornerShape(2.dp)))
+        }
     }
 }
 
 @Composable
-private fun BottomNav(selected: String, onSelect: (String) -> Unit) {
-    val items = listOf("БАЗА" to "⌂", "СТРОЙКА" to "▦", "РАЗВЕДКА" to "↗", "ЖУРНАЛ" to "≡")
-    Row(modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth().background(Panel, RoundedCornerShape(12.dp)).padding(5.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        items.forEach { (label, icon) ->
-            val active = label == selected
-            Column(modifier = Modifier.weight(1f).background(if (active) Color(0xFF203C27) else Color.Transparent, RoundedCornerShape(8.dp))
-                .clickable { onSelect(label) }.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(icon, color = if (active) Neon else Muted, fontSize = 19.sp, fontWeight = FontWeight.Black)
-                Text(label, color = if (active) Neon else Muted, fontSize = 8.sp, fontWeight = FontWeight.Black)
+private fun BuildScreen(scrap: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, build: (Int) -> Unit) {
+    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp)) {
+        Text("МОДЕРНИЗАЦИЯ УБЕЖИЩА", color = Neon, fontSize = 17.sp, fontWeight = FontWeight.Black)
+        Text("Металлолом: $scrap  •  Выбирай модули, которые помогут выжить.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
+        Spacer(Modifier.height(14.dp))
+        BuildCard("◈", "ФИЛЬТРАЦИЯ ВОДЫ", "Снижает расход воды каждый день.", 20, builtWater) { build(0) }
+        BuildCard("▥", "ГИДРОПОННАЯ ФЕРМА", "Производит провизию для выживших.", 30, builtFarm) { build(1) }
+        BuildCard("+", "МЕДИЦИНСКИЙ БЛОК", "Нужен для лечения и будущих событий.", 35, builtMed) { build(2) }
+        Spacer(Modifier.height(12.dp))
+        Text("Следующие модули: оружейная, мастерская, лаборатория и жилые капсулы.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
+    }
+}
+@Composable
+private fun BuildCard(icon: String, title: String, desc: String, cost: Int, built: Boolean, action: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp).background(Color(0xFF121B15), RoundedCornerShape(12.dp)).border(1.dp, if (built) Neon.copy(alpha=.45f) else Wall, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(48.dp).background(Color(0xFF203326), RoundedCornerShape(9.dp)), contentAlignment = Alignment.Center) { Text(icon, color = Neon, fontSize = 24.sp, fontWeight = FontWeight.Black) }
+        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+            Text(title, color = TextWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            Text(desc, color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+            Text(if (built) "УСТАНОВЛЕНО" else "◈ $cost МЕТАЛЛА", color = if (built) Neon else Amber, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        }
+        if (built) Text("✓", color = Neon, fontSize = 20.sp) else Button(onClick=action, colors=ButtonDefaults.buttonColors(containerColor=Neon,contentColor=Void)) { Text("СТРОИТЬ", fontSize=9.sp,fontWeight=FontWeight.Black) }
+    }
+}
+@Composable
+private fun SurfaceScreen(scrap: Int, survivors: Int, onExplore: () -> Unit) {
+    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("ЗАПРЕТНАЯ ЗОНА", color = Neon, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("ПОВЕРХНОСТЬ • СЕКТОР 7G", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Canvas(Modifier.fillMaxWidth().height(240.dp).background(Color(0xFF09120D), RoundedCornerShape(12.dp))) {
+            val w=size.width; val h=size.height
+            for (i in 0..12) drawLine(Color(0xFF18301E),Offset(w*i/12f,0f),Offset(w*i/12f,h),1f)
+            for (i in 0..8) drawLine(Color(0xFF18301E),Offset(0f,h*i/8f),Offset(w,h*i/8f),1f)
+            val buildings=listOf(floatArrayOf(.04f,.48f,.16f,.52f),floatArrayOf(.23f,.2f,.18f,.8f),floatArrayOf(.45f,.4f,.14f,.6f),floatArrayOf(.63f,.12f,.19f,.88f),floatArrayOf(.84f,.36f,.13f,.64f))
+            buildings.forEachIndexed { i,b ->
+                val x=w*b[0]; val y=h*b[1]; val bw=w*b[2]; val bh=h*b[3]
+                drawRect(Color(0xFF1C2B21),Offset(x,y),Size(bw,bh))
+                drawRect(Color(0xFF506354),Offset(x,y),Size(bw,bh),style=Stroke(2f))
+                for (r in 1..4) for (c in 1..2) drawRect(if ((r+c+i)%3==0) Amber.copy(alpha=.6f) else Color(0xFF354A39),Offset(x+bw*c/3,y+bh*r/5),Size(4f,5f))
+            }
+            drawCircle(Neon.copy(alpha=.12f),55f,Offset(w*.5f,h*.57f))
+            drawCircle(Neon,55f,Offset(w*.5f,h*.57f),style=Stroke(2f))
+            drawCircle(Neon,4f,Offset(w*.5f,h*.57f))
+            drawLine(Neon,Offset(w*.5f-70,h*.57f),Offset(w*.5f+70,h*.57f),1f)
+            drawLine(Neon,Offset(w*.5f,h*.57f-70),Offset(w*.5f,h*.57f+70),1f)
+            drawPerson(w*.5f,h*.57f,Amber,1.2f)
+        }
+        Text("Радиация нестабильна. Сканер засёк металл и слабый сигнал в руинах. Экспедиция может принести ресурсы.", color = TextWhite, fontSize = 13.sp, lineHeight = 20.sp)
+        Text("МЕТАЛЛОЛОМ В ХРАНИЛИЩЕ: $scrap  •  ВЫЖИВШИЕ: $survivors", color = Amber, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        GameButton("↗  ОТПРАВИТЬ ЭКСПЕДИЦИЮ", Modifier.fillMaxWidth(), Neon, onExplore)
+    }
+}
+@Composable
+private fun GameButton(label: String, modifier: Modifier, color: Color, action: () -> Unit) {
+    Button(onClick=action,modifier=modifier.height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=color,contentColor=Void),shape=RoundedCornerShape(8.dp)) {
+        Text(label,fontSize=10.sp,fontWeight=FontWeight.Black,textAlign=TextAlign.Center)
+    }
+}
+@Composable
+private fun BottomBar(selected: String, onSelect: (String)->Unit) {
+    val items=listOf("УБЕЖИЩЕ" to "⌂","СТРОИТЬ" to "▦","ПОВЕРХНОСТЬ" to "↗","ЖУРНАЛ" to "≡")
+    Row(Modifier.fillMaxWidth().background(Color(0xFF111914)).padding(horizontal=5.dp,vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+        items.forEach { (label,icon) ->
+            val active=label==selected
+            Column(Modifier.weight(1f).background(if(active) Color(0xFF25442D) else Color.Transparent,RoundedCornerShape(8.dp)).clickable { onSelect(label) }.padding(vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                Text(icon,color=if(active) Neon else Muted,fontSize=18.sp,fontWeight=FontWeight.Black)
+                Text(label,color=if(active) Neon else Muted,fontSize=8.sp,fontWeight=FontWeight.Black)
             }
         }
     }
