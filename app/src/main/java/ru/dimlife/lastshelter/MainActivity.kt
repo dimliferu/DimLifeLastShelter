@@ -102,7 +102,7 @@ private fun ShelterGame(context: Context) {
             "УБЕЖИЩЕ" -> {
                 Text("ЖИЛОЙ СЕКТОР  /  КАМЕРА НАБЛЮДЕНИЯ", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Black,
                     modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 8.dp))
-                Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
+                Box(Modifier.fillMaxWidth().height(420.dp).padding(horizontal = 10.dp)) {
                     ShelterWorld(
                         selected = selected, builtWater = builtWater, builtFarm = builtFarm, builtMed = builtMed,
                         onSelect = { selected = it }
@@ -189,20 +189,20 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
                 detectTapGestures { p ->
                     val x = p.x / size.width
                     val y = p.y / size.height
-                    val col = (x * 3).toInt().coerceIn(0, 2)
-                    val row = (y * 2).toInt().coerceIn(0, 1)
-                    onSelect(row * 3 + col)
+                    val col = (x * 2).toInt().coerceIn(0, 1)
+                    val row = (y * 3).toInt().coerceIn(0, 2)
+                    onSelect(row * 2 + col)
                 }
             }
     ) {
-        val cw = size.width / 3f
-        val ch = size.height / 2f
+        val cw = size.width / 2f
+        val ch = size.height / 3f
         drawRect(Color(0xFF0A110C), size = size)
         for (x in 0..12) drawLine(Color(0xFF14251A), Offset(size.width*x/12f,0f), Offset(size.width*x/12f,size.height), 1f)
         for (y in 0..16) drawLine(Color(0xFF14251A), Offset(0f,size.height*y/16f), Offset(size.width,size.height*y/16f), 1f)
         for (i in 0..5) {
-            val col = i % 3
-            val row = i / 3
+            val col = i % 2
+            val row = i / 2
             val left = col*cw + 5f
             val top = row*ch + 5f
             val w = cw - 10f
@@ -230,14 +230,16 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
                 android.graphics.Paint().apply { color = if (isBuilt) android.graphics.Color.rgb(130,255,150) else android.graphics.Color.rgb(132,151,137); textSize = min(11f, cw/13f); textAlign = android.graphics.Paint.Align.CENTER; typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD) })
         }
         // corridor and glowing connection nodes
-        drawLine(Neon.copy(alpha=.35f), Offset(cw*.5f, ch), Offset(cw*2.5f,ch), 4f)
-        drawLine(Neon.copy(alpha=.35f), Offset(cw*1.5f,ch*.5f), Offset(cw*1.5f,ch*1.5f), 4f)
-        drawCircle(Neon, 4f, Offset(cw*1.5f,ch))
-        // small survivors walking through the base
-        drawPerson(cw*.72f, ch*.74f, Neon, 1f)
-        drawPerson(cw*1.25f, ch*1.28f, Blue, .9f)
-        drawPerson(cw*2.38f, ch*1.25f, Amber, .95f)
-        drawPerson(cw*2.72f, ch*.73f, Neon, .85f)
+        drawLine(Neon.copy(alpha=.35f), Offset(cw, ch*.5f), Offset(cw, ch*2.5f), 4f)
+        drawLine(Neon.copy(alpha=.35f), Offset(cw*.5f, ch), Offset(cw*1.5f,ch), 4f)
+        drawCircle(Neon, 4f, Offset(cw,ch))
+        // Larger residents visible inside the rooms
+        drawPerson(cw*.48f, ch*.72f, Neon, 1.55f)
+        drawPerson(cw*1.43f, ch*.70f, Blue, 1.5f)
+        drawPerson(cw*.48f, ch*1.72f, Amber, 1.55f)
+        drawPerson(cw*1.43f, ch*1.70f, Neon, 1.5f)
+        drawPerson(cw*.48f, ch*2.72f, Blue, 1.55f)
+        drawPerson(cw*1.43f, ch*2.70f, Amber, 1.5f)
         // overhead status lights
         drawCircle(Neon, 3f, Offset(size.width-15f, 14f))
         drawCircle(Amber, 3f, Offset(size.width-26f, 14f))
