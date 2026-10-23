@@ -285,26 +285,39 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPerson(x: Float
     drawCircle(Color(0xFF111713), 1f*scale, Offset(x+1.2f*scale,y-7f*scale))
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReactor(x: Float,y: Float,w: Float,h: Float) {
-    val cx=x+w/2; val cy=y+h*.4f
-    drawCircle(Color(0xFF0B130E), min(w,h)*.27f, Offset(cx,cy))
-    drawCircle(Neon.copy(alpha=.25f), min(w,h)*.24f, Offset(cx,cy))
-    drawCircle(Neon, min(w,h)*.18f, Offset(cx,cy), style=Stroke(3f))
-    drawCircle(Color(0xFFB6FFC2), min(w,h)*.09f, Offset(cx,cy))
-    for (a in 0..7) {
-        val angle=a*Math.PI/4
-        val x1=cx+kotlin.math.cos(angle).toFloat()*min(w,h)*.2f
-        val y1=cy+kotlin.math.sin(angle).toFloat()*min(w,h)*.2f
-        drawLine(Neon, Offset(x1,y1), Offset(cx+kotlin.math.cos(angle).toFloat()*min(w,h)*.3f,cy+kotlin.math.sin(angle).toFloat()*min(w,h)*.3f), 2f)
+    val cx=x+w/2; val cy=y+h*.43f; val r=min(w,h)*.23f
+    // reinforced reactor bay with heavy containment frame
+    drawRoundRect(Color(0xFF101912), Offset(x+w*.12f,y+h*.18f), Size(w*.76f,h*.54f), CornerRadius(9f))
+    drawRoundRect(Color(0xFF34463A), Offset(x+w*.15f,y+h*.21f), Size(w*.70f,h*.48f), CornerRadius(7f), style=Stroke(4f))
+    drawRoundRect(Color(0xFF080D09), Offset(cx-r*1.42f,cy-r*1.42f), Size(r*2.84f,r*2.84f), CornerRadius(r*.25f))
+    drawCircle(Color(0xFF17291C),r*1.25f,Offset(cx,cy))
+    drawCircle(Neon.copy(alpha=.12f),r*1.14f,Offset(cx,cy))
+    drawCircle(Color(0xFF4B8759),r*.94f,Offset(cx,cy),style=Stroke(r*.13f))
+    drawCircle(Neon.copy(alpha=.2f),r*.78f,Offset(cx,cy),style=Stroke(r*.18f))
+    drawCircle(Neon,r*.57f,Offset(cx,cy),style=Stroke(r*.14f))
+    drawCircle(Color(0xFFBFFFC9),r*.28f,Offset(cx,cy))
+    for(a in 0..7){val an=a*Math.PI/4; val ax=kotlin.math.cos(an).toFloat(); val ay=kotlin.math.sin(an).toFloat()
+        drawLine(Color(0xFFB5C6B8),Offset(cx+ax*r*1.08f,cy+ay*r*1.08f),Offset(cx+ax*r*1.42f,cy+ay*r*1.42f),3f)
+        drawCircle(Amber.copy(alpha=.8f),2.5f,Offset(cx+ax*r*1.5f,cy+ay*r*1.5f))
     }
+    for(i in 0..3){val py=y+h*(.26f+i*.105f);drawLine(Color(0xFF42584A),Offset(x+w*.08f,py),Offset(x+w*.24f,py),4f);drawLine(Color(0xFF42584A),Offset(x+w*.76f,py),Offset(x+w*.92f,py),4f)}
+    drawRoundRect(Color(0xFF0A100C),Offset(x+w*.24f,y+h*.76f),Size(w*.52f,h*.10f),CornerRadius(4f))
+    for(i in 0..5) drawRoundRect(if(i<4) Neon else Amber,Offset(x+w*(.29f+i*.07f),y+h*.79f),Size(w*.045f,h*.025f),CornerRadius(2f))
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCommandDesk(x: Float,y: Float,w: Float,h: Float) {
     val cx=x+w/2
-    drawRoundRect(Color(0xFF09110D), Offset(x+w*.15f,y+h*.2f), Size(w*.7f,h*.38f), CornerRadius(5f))
-    drawRoundRect(Color(0xFF244D31), Offset(x+w*.2f,y+h*.24f), Size(w*.6f,h*.27f), CornerRadius(3f))
-    drawLine(Neon, Offset(x+w*.25f,y+h*.33f), Offset(x+w*.72f,y+h*.33f), 2f)
-    drawLine(Blue, Offset(x+w*.25f,y+h*.41f), Offset(x+w*.55f,y+h*.41f), 2f)
-    drawRoundRect(Wall, Offset(cx-w*.2f,y+h*.62f), Size(w*.4f,h*.12f), CornerRadius(3f))
-    drawPerson(cx,y+h*.79f,Amber,.9f)
+    // command console, stacked displays, cable ducts and operator chair
+    drawRoundRect(Color(0xFF0A100C),Offset(x+w*.12f,y+h*.18f),Size(w*.76f,h*.40f),CornerRadius(7f))
+    drawRoundRect(Color(0xFF43594A),Offset(x+w*.16f,y+h*.21f),Size(w*.68f,h*.34f),CornerRadius(5f),style=Stroke(3f))
+    drawRoundRect(Color(0xFF183A25),Offset(x+w*.20f,y+h*.24f),Size(w*.60f,h*.27f),CornerRadius(3f))
+    for(i in 0..4){val yy=y+h*(.29f+i*.042f);drawLine(if(i==1) Blue else Neon.copy(alpha=.7f),Offset(x+w*.25f,yy),Offset(x+w*(.43f+(i%3)*.1f),yy),2f)}
+    drawLine(Amber,Offset(x+w*.69f,y+h*.29f),Offset(x+w*.76f,y+h*.29f),3f)
+    drawLine(Neon,Offset(x+w*.69f,y+h*.35f),Offset(x+w*.76f,y+h*.35f),3f)
+    drawRoundRect(Color(0xFF34463A),Offset(x+w*.30f,y+h*.62f),Size(w*.40f,h*.09f),CornerRadius(3f))
+    drawRoundRect(Color(0xFF202D24),Offset(cx-w*.13f,y+h*.71f),Size(w*.26f,h*.10f),CornerRadius(4f))
+    drawLine(Color(0xFF65796A),Offset(cx,y+h*.70f),Offset(cx,y+h*.80f),3f)
+    drawRoundRect(Color(0xFF0B120D),Offset(x+w*.09f,y+h*.82f),Size(w*.82f,h*.07f),CornerRadius(3f))
+    drawPerson(cx,y+h*.78f,Amber,1.25f)
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBeds(x: Float,y: Float,w: Float,h: Float) {
     // Metal bunk frames, pillows, blankets, ladders and wall lamps.
@@ -322,10 +335,21 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBeds(x: Float,y
     drawPerson(x+w*.52f,y+h*.82f,Blue,1.1f)
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMachine(x: Float,y: Float,w: Float,h: Float,c: Color) {
-    drawRoundRect(Color(0xFF34453A), Offset(x+w*.25f,y+h*.2f), Size(w*.5f,h*.5f), CornerRadius(5f))
-    drawRoundRect(Color(0xFF0A120D), Offset(x+w*.31f,y+h*.27f), Size(w*.38f,h*.27f), CornerRadius(4f))
-    drawCircle(c, min(w,h)*.07f, Offset(x+w*.5f,y+h*.4f))
-    drawLine(c, Offset(x+w*.33f,y+h*.6f), Offset(x+w*.67f,y+h*.6f), 2f)
+    // industrial water purifier with filter cylinders, pipes, pressure gauge and status screen
+    drawRoundRect(Color(0xFF26372D),Offset(x+w*.17f,y+h*.20f),Size(w*.66f,h*.55f),CornerRadius(8f))
+    drawRoundRect(Color(0xFF5D7563),Offset(x+w*.17f,y+h*.20f),Size(w*.66f,h*.55f),CornerRadius(8f),style=Stroke(3f))
+    for(i in 0..2){val bx=x+w*(.25f+i*.19f)
+        drawRoundRect(Color(0xFF101914),Offset(bx,y+h*.28f),Size(w*.13f,h*.32f),CornerRadius(5f))
+        drawRoundRect(c.copy(alpha=.35f),Offset(bx+3f,y+h*.31f),Size(w*.13f-6f,h*.26f),CornerRadius(4f))
+        drawLine(c,Offset(bx+w*.065f,y+h*.35f),Offset(bx+w*.065f,y+h*.54f),2f)
+    }
+    drawRoundRect(Color(0xFF0A110C),Offset(x+w*.31f,y+h*.62f),Size(w*.38f,h*.09f),CornerRadius(3f))
+    drawCircle(c,min(w,h)*.035f,Offset(x+w*.5f,y+h*.665f))
+    drawLine(Color(0xFF829487),Offset(x+w*.15f,y+h*.32f),Offset(x+w*.08f,y+h*.32f),4f)
+    drawLine(Color(0xFF829487),Offset(x+w*.08f,y+h*.32f),Offset(x+w*.08f,y+h*.67f),4f)
+    drawLine(Color(0xFF829487),Offset(x+w*.85f,y+h*.38f),Offset(x+w*.92f,y+h*.38f),4f)
+    drawLine(Color(0xFF829487),Offset(x+w*.92f,y+h*.38f),Offset(x+w*.92f,y+h*.67f),4f)
+    drawCircle(Amber,3f,Offset(x+w*.77f,y+h*.25f))
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCrates(x: Float,y: Float,w: Float,h: Float) {
     for (i in 0..2) {
@@ -336,129 +360,39 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCrates(x: Float
     }
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawFarm(x: Float,y: Float,w: Float,h: Float) {
-    for (i in 0..2) {
-        val yy=y+h*(.25f+i*.19f)
-        drawRoundRect(Color(0xFF2B4730), Offset(x+w*.18f,yy), Size(w*.64f,h*.12f), CornerRadius(3f))
-        for (j in 0..3) drawLine(Neon.copy(alpha=.8f), Offset(x+w*(.24f+j*.16f),yy+3f), Offset(x+w*(.24f+j*.16f),yy+h*.12f-2f), 2f)
+    // hydroponics: three illuminated growing beds, leafy crops, nutrient tanks
+    drawRoundRect(Color(0xFF0C1510),Offset(x+w*.09f,y+h*.19f),Size(w*.82f,h*.54f),CornerRadius(7f))
+    for(i in 0..2){val yy=y+h*(.28f+i*.15f)
+        drawRoundRect(Color(0xFF314B36),Offset(x+w*.17f,yy),Size(w*.66f,h*.10f),CornerRadius(4f))
+        drawRoundRect(Color(0xFF0A100C),Offset(x+w*.19f,yy+h*.012f),Size(w*.62f,h*.025f),CornerRadius(2f))
+        for(j in 0..5){val px=x+w*(.23f+j*.10f);val py=yy-h*.035f
+            drawLine(Color(0xFF4C9C58),Offset(px,yy+h*.02f),Offset(px,py+h*.04f),2f)
+            drawOval(if((j+i)%2==0) Color(0xFF77C96C) else Color(0xFF3F8C4D),Offset(px-w*.025f,py),Size(w*.06f,h*.055f))
+            drawOval(Color(0xFF9AE98A),Offset(px,py+h*.01f),Size(w*.025f,h*.035f))
+        }
+        drawLine(Blue.copy(alpha=.7f),Offset(x+w*.18f,yy+h*.075f),Offset(x+w*.82f,yy+h*.075f),2f)
     }
+    drawRoundRect(Color(0xFF2E4134),Offset(x+w*.25f,y+h*.76f),Size(w*.50f,h*.08f),CornerRadius(3f))
+    drawCircle(Blue,min(w,h)*.035f,Offset(x+w*.38f,y+h*.80f))
+    drawCircle(Neon,min(w,h)*.035f,Offset(x+w*.62f,y+h*.80f))
 }
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMedical(x: Float,y: Float,w: Float,h: Float) {
-    drawRoundRect(Color(0xFF31443A), Offset(x+w*.2f,y+h*.24f), Size(w*.6f,h*.45f), CornerRadius(5f))
-    drawRect(Color(0xFF0C160F), Offset(x+w*.25f,y+h*.29f), Size(w*.5f,h*.35f))
-    drawRect(Red, Offset(x+w*.45f,y+h*.34f), Size(w*.1f,h*.25f))
-    drawRect(Red, Offset(x+w*.37f,y+h*.42f), Size(w*.26f,h*.08f))
-}
-
-@Composable
-private fun SelectedRoom(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, message: String) {
-    val name = roomNames[selected]
-    val status = when (selected) {
-        0 -> "РЕАКТОР • МОЩНОСТЬ 84% • ОБСЛУЖИВАНИЕ ДОСТУПНО"
-        1 -> "КОМАНДНЫЙ ЦЕНТР • СТАТУС: АКТИВЕН"
-        2 -> "ЖИЛОЙ БЛОК • 4 КОЙКИ • СМЕНА ДЕЖУРИТ"
-        3 -> if (builtWater) "ФИЛЬТР ВОДЫ • ПРОИЗВОДИТЕЛЬНОСТЬ НОРМА" else "НЕ ПОСТРОЕНО • ОТКРОЙ РАЗДЕЛ СТРОИТЕЛЬСТВА"
-        4 -> if (builtFarm) "ГИДРОПОНИКА • РАСТЕНИЯ РАСТУТ" else "НЕ ПОСТРОЕНО • ПРОВИЗИЯ НА ИСХОДЕ"
-        else -> if (builtMed) "МЕДБЛОК • ГОТОВ К ПРИЁМУ" else "НЕ ПОСТРОЕНО • МЕДИЦИНСКАЯ ПОМОЩЬ НЕДОСТУПНА"
-    }
-    Column(Modifier.fillMaxWidth().background(Color(0xFF0E1711)).padding(horizontal=14.dp, vertical=9.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(7.dp).background(if (selected < 3 || (selected==3 && builtWater) || (selected==4 && builtFarm) || (selected==5 && builtMed)) Neon else Amber, RoundedCornerShape(4.dp)))
-            Spacer(Modifier.width(7.dp))
-            Text(name, color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Black)
-        }
-        Text(status, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
-    }
-}
-
-@Composable
-private fun ResourceStrip(power: Int, water: Int, oxygen: Int, food: Int) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        MiniResource("⚡", power, Modifier.weight(1f))
-        MiniResource("◈", water, Modifier.weight(1f))
-        MiniResource("◎", oxygen, Modifier.weight(1f))
-        MiniResource("▦", food, Modifier.weight(1f))
-    }
-}
-@Composable
-private fun MiniResource(icon: String, value: Int, modifier: Modifier) {
-    Column(modifier.background(Color(0xFF121B15), RoundedCornerShape(8.dp)).padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(icon, color = Neon, fontSize = 13.sp)
-        Text("$value%", color = if (value < 20) Red else TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Black)
-        Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0xFF29352C), RoundedCornerShape(2.dp))) {
-            Box(Modifier.fillMaxWidth(value.coerceIn(0,100)/100f).height(3.dp).background(if (value<20) Red else Neon, RoundedCornerShape(2.dp)))
-        }
-    }
-}
-
-@Composable
-private fun BuildScreen(scrap: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, build: (Int) -> Unit) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp)) {
-        Text("МОДЕРНИЗАЦИЯ УБЕЖИЩА", color = Neon, fontSize = 17.sp, fontWeight = FontWeight.Black)
-        Text("Металлолом: $scrap  •  Выбирай модули, которые помогут выжить.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
-        Spacer(Modifier.height(14.dp))
-        BuildCard("◈", "ФИЛЬТРАЦИЯ ВОДЫ", "Снижает расход воды каждый день.", 20, builtWater) { build(0) }
-        BuildCard("▥", "ГИДРОПОННАЯ ФЕРМА", "Производит провизию для выживших.", 30, builtFarm) { build(1) }
-        BuildCard("+", "МЕДИЦИНСКИЙ БЛОК", "Нужен для лечения и будущих событий.", 35, builtMed) { build(2) }
-        Spacer(Modifier.height(12.dp))
-        Text("Следующие модули: оружейная, мастерская, лаборатория и жилые капсулы.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
-    }
-}
-@Composable
-private fun BuildCard(icon: String, title: String, desc: String, cost: Int, built: Boolean, action: () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(top = 10.dp).background(Color(0xFF121B15), RoundedCornerShape(12.dp)).border(1.dp, if (built) Neon.copy(alpha=.45f) else Wall, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(48.dp).background(Color(0xFF203326), RoundedCornerShape(9.dp)), contentAlignment = Alignment.Center) { Text(icon, color = Neon, fontSize = 24.sp, fontWeight = FontWeight.Black) }
-        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-            Text(title, color = TextWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
-            Text(desc, color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
-            Text(if (built) "УСТАНОВЛЕНО" else "◈ $cost МЕТАЛЛА", color = if (built) Neon else Amber, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-        }
-        if (built) Text("✓", color = Neon, fontSize = 20.sp) else Button(onClick=action, colors=ButtonDefaults.buttonColors(containerColor=Neon,contentColor=Void)) { Text("СТРОИТЬ", fontSize=9.sp,fontWeight=FontWeight.Black) }
-    }
-}
-@Composable
-private fun SurfaceScreen(scrap: Int, survivors: Int, onExplore: () -> Unit) {
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("ЗАПРЕТНАЯ ЗОНА", color = Neon, fontSize = 18.sp, fontWeight = FontWeight.Black)
-        Text("ПОВЕРХНОСТЬ • СЕКТОР 7G", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Canvas(Modifier.fillMaxWidth().height(240.dp).background(Color(0xFF09120D), RoundedCornerShape(12.dp))) {
-            val w=size.width; val h=size.height
-            for (i in 0..12) drawLine(Color(0xFF18301E),Offset(w*i/12f,0f),Offset(w*i/12f,h),1f)
-            for (i in 0..8) drawLine(Color(0xFF18301E),Offset(0f,h*i/8f),Offset(w,h*i/8f),1f)
-            val buildings=listOf(floatArrayOf(.04f,.48f,.16f,.52f),floatArrayOf(.23f,.2f,.18f,.8f),floatArrayOf(.45f,.4f,.14f,.6f),floatArrayOf(.63f,.12f,.19f,.88f),floatArrayOf(.84f,.36f,.13f,.64f))
-            buildings.forEachIndexed { i,b ->
-                val x=w*b[0]; val y=h*b[1]; val bw=w*b[2]; val bh=h*b[3]
-                drawRect(Color(0xFF1C2B21),Offset(x,y),Size(bw,bh))
-                drawRect(Color(0xFF506354),Offset(x,y),Size(bw,bh),style=Stroke(2f))
-                for (r in 1..4) for (c in 1..2) drawRect(if ((r+c+i)%3==0) Amber.copy(alpha=.6f) else Color(0xFF354A39),Offset(x+bw*c/3,y+bh*r/5),Size(4f,5f))
-            }
-            drawCircle(Neon.copy(alpha=.12f),55f,Offset(w*.5f,h*.57f))
-            drawCircle(Neon,55f,Offset(w*.5f,h*.57f),style=Stroke(2f))
-            drawCircle(Neon,4f,Offset(w*.5f,h*.57f))
-            drawLine(Neon,Offset(w*.5f-70,h*.57f),Offset(w*.5f+70,h*.57f),1f)
-            drawLine(Neon,Offset(w*.5f,h*.57f-70),Offset(w*.5f,h*.57f+70),1f)
-            drawPerson(w*.5f,h*.57f,Amber,1.2f)
-        }
-        Text("Радиация нестабильна. Сканер засёк металл и слабый сигнал в руинах. Экспедиция может принести ресурсы.", color = TextWhite, fontSize = 13.sp, lineHeight = 20.sp)
-        Text("МЕТАЛЛОЛОМ В ХРАНИЛИЩЕ: $scrap  •  ВЫЖИВШИЕ: $survivors", color = Amber, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        GameButton("↗  ОТПРАВИТЬ ЭКСПЕДИЦИЮ", Modifier.fillMaxWidth(), Neon, onExplore)
-    }
-}
-@Composable
-private fun GameButton(label: String, modifier: Modifier, color: Color, action: () -> Unit) {
-    Button(onClick=action,modifier=modifier.height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=color,contentColor=Void),shape=RoundedCornerShape(8.dp)) {
-        Text(label,fontSize=10.sp,fontWeight=FontWeight.Black,textAlign=TextAlign.Center)
-    }
-}
-@Composable
-private fun BottomBar(selected: String, onSelect: (String)->Unit) {
-    val items=listOf("УБЕЖИЩЕ" to "⌂","СТРОИТЬ" to "▦","ПОВЕРХНОСТЬ" to "↗","ЖУРНАЛ" to "≡")
-    Row(Modifier.fillMaxWidth().background(Color(0xFF111914)).padding(horizontal=5.dp,vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-        items.forEach { (label,icon) ->
-            val active=label==selected
-            Column(Modifier.weight(1f).background(if(active) Color(0xFF25442D) else Color.Transparent,RoundedCornerShape(8.dp)).clickable { onSelect(label) }.padding(vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(3.dp)) {
-                Text(icon,color=if(active) Neon else Muted,fontSize=18.sp,fontWeight=FontWeight.Black)
-                Text(label,color=if(active) Neon else Muted,fontSize=8.sp,fontWeight=FontWeight.Black)
-            }
-        }
-    }
+    // clinic bed, monitor, IV stand, cabinet and medical cross
+    drawRoundRect(Color(0xFF27392E),Offset(x+w*.12f,y+h*.26f),Size(w*.55f,h*.36f),CornerRadius(7f))
+    drawRoundRect(Color(0xFF8EA99A),Offset(x+w*.15f,y+h*.28f),Size(w*.48f,h*.10f),CornerRadius(4f))
+    drawRoundRect(Color(0xFF477A58),Offset(x+w*.15f,y+h*.39f),Size(w*.48f,h*.18f),CornerRadius(3f))
+    drawRoundRect(Color(0xFF9AB2A0),Offset(x+w*.11f,y+h*.24f),Size(w*.58f,h*.06f),CornerRadius(3f))
+    drawLine(Color(0xFF82998A),Offset(x+w*.18f,y+h*.62f),Offset(x+w*.18f,y+h*.71f),4f)
+    drawLine(Color(0xFF82998A),Offset(x+w*.59f,y+h*.62f),Offset(x+w*.59f,y+h*.71f),4f)
+    drawRoundRect(Color(0xFF0B130E),Offset(x+w*.68f,y+h*.22f),Size(w*.22f,h*.23f),CornerRadius(4f))
+    drawRoundRect(Color(0xFF193D29),Offset(x+w*.71f,y+h*.25f),Size(w*.16f,h*.14f),CornerRadius(3f))
+    drawLine(Neon,Offset(x+w*.73f,y+h*.32f),Offset(x+w*.78f,y+h*.32f),2f)
+    drawLine(Neon,Offset(x+w*.78f,y+h*.32f),Offset(x+w*.81f,y+h*.28f),2f)
+    drawLine(Neon,Offset(x+w*.81f,y+h*.28f),Offset(x+w*.85f,y+h*.35f),2f)
+    drawLine(Color(0xFF9EB2A4),Offset(x+w*.78f,y+h*.45f),Offset(x+w*.78f,y+h*.70f),3f)
+    drawLine(Color(0xFF9EB2A4),Offset(x+w*.69f,y+h*.70f),Offset(x+w*.87f,y+h*.70f),3f)
+    drawLine(Blue,Offset(x+w*.78f,y+h*.45f),Offset(x+w*.78f,y+h*.51f),2f)
+    drawRoundRect(Color(0xFF34493A),Offset(x+w*.24f,y+h*.76f),Size(w*.22f,h*.08f),CornerRadius(3f))
+    drawLine(Red,Offset(x+w*.35f,y+h*.775f),Offset(x+w*.35f,y+h*.825f),3f)
+    drawLine(Red,Offset(x+w*.32f,y+h*.80f),Offset(x+w*.38f,y+h*.80f),3f)
 }
