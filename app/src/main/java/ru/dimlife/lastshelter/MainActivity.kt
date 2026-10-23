@@ -4,6 +4,10 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -182,6 +186,8 @@ private fun Header(day: Int, scrap: Int, survivors: Int) {
 
 @Composable
 private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, onSelect: (Int) -> Unit) {
+    val motion = rememberInfiniteTransition(label = "shelter-motion")
+    val walkPhase by motion.animateFloat(initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(2400)), label = "walk-phase")
     Canvas(
         Modifier.fillMaxSize().background(Color(0xFF080E0A), RoundedCornerShape(12.dp))
             .border(1.dp, Color(0xFF354A3A), RoundedCornerShape(12.dp))
@@ -233,13 +239,14 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
         drawLine(Neon.copy(alpha=.35f), Offset(cw, ch*.5f), Offset(cw, ch*2.5f), 4f)
         drawLine(Neon.copy(alpha=.35f), Offset(cw*.5f, ch), Offset(cw*1.5f,ch), 4f)
         drawCircle(Neon, 4f, Offset(cw,ch))
-        // Larger residents visible inside the rooms
-        drawPerson(cw*.48f, ch*.72f, Neon, 1.55f)
-        drawPerson(cw*1.43f, ch*.70f, Blue, 1.5f)
-        drawPerson(cw*.48f, ch*1.72f, Amber, 1.55f)
-        drawPerson(cw*1.43f, ch*1.70f, Neon, 1.5f)
-        drawPerson(cw*.48f, ch*2.72f, Blue, 1.55f)
-        drawPerson(cw*1.43f, ch*2.70f, Amber, 1.5f)
+        // Animated residents patrol connected rooms
+        val patrol = (walkPhase - .5f) * cw * .30f
+        drawPerson(cw*.48f + patrol, ch*.72f, Neon, 1.9f)
+        drawPerson(cw*1.43f - patrol, ch*.70f, Blue, 1.85f)
+        drawPerson(cw*.48f - patrol*.7f, ch*1.72f, Amber, 1.9f)
+        drawPerson(cw*1.43f + patrol*.7f, ch*1.70f, Neon, 1.85f)
+        drawPerson(cw*.48f + patrol*.6f, ch*2.72f, Blue, 1.9f)
+        drawPerson(cw*1.43f - patrol*.6f, ch*2.70f, Amber, 1.85f)
         // overhead status lights
         drawCircle(Neon, 3f, Offset(size.width-15f, 14f))
         drawCircle(Amber, 3f, Offset(size.width-26f, 14f))
