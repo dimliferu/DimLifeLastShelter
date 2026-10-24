@@ -188,6 +188,22 @@ private fun Header(day: Int, scrap: Int, survivors: Int) {
 private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, onSelect: (Int) -> Unit) {
     val motion = rememberInfiniteTransition(label = "shelter-motion")
     val walkPhase by motion.animateFloat(initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(2400)), label = "walk-phase")
+    val roomArts = listOf(
+        androidx.compose.ui.res.imageResource(id = R.drawable.room_reactor),
+        androidx.compose.ui.res.imageResource(id = R.drawable.room_command),
+        androidx.compose.ui.res.imageResource(id = R.drawable.room_living),
+        androidx.compose.ui.res.imageResource(id = R.drawable.room_water),
+        androidx.compose.ui.res.imageResource(id = R.drawable.room_farm),
+        androidx.compose.ui.res.imageResource(id = R.drawable.room_medical)
+    )
+    val survivorArts = listOf(
+        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_engineer),
+        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_medic),
+        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_guard),
+        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_farmer),
+        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_scientist),
+        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_mechanic)
+    )
     Canvas(
         Modifier.fillMaxSize().background(Color(0xFF080E0A), RoundedCornerShape(12.dp))
             .border(1.dp, Color(0xFF354A3A), RoundedCornerShape(12.dp))
@@ -214,16 +230,8 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
             val w = cw - 10f
             val h = ch - 10f
             val isBuilt = i == 0 || i == 1 || (i == 3 && builtWater) || (i == 4 && builtFarm) || (i == 5 && builtMed)
-            val art = when (i) {
-                0 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_reactor)
-                1 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_command)
-                2 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_living)
-                3 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_water)
-                4 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_farm)
-                else -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_medical)
-            }
             drawImage(
-                image = art,
+                image = roomArts[i],
                 dstOffset = androidx.compose.ui.unit.IntOffset(left.toInt(), top.toInt()),
                 dstSize = androidx.compose.ui.unit.IntSize(w.toInt(), h.toInt())
             )
@@ -239,19 +247,19 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
         drawCircle(Neon, 4f, Offset(cw,ch))
         // Animated residents patrol connected rooms
         val patrol = (walkPhase - .5f) * cw * .30f
-        fun drawSurvivor(resId: Int, x: Float, y: Float, width: Int = 42, height: Int = 62) {
+        fun drawSurvivor(art: androidx.compose.ui.graphics.ImageBitmap, x: Float, y: Float, width: Int = 42, height: Int = 62) {
             drawImage(
-                image = androidx.compose.ui.graphics.ImageBitmap.imageResource(resId),
+                image = art,
                 dstOffset = androidx.compose.ui.unit.IntOffset((x-width/2f).toInt(), (y-height/2f).toInt()),
                 dstSize = androidx.compose.ui.unit.IntSize(width, height)
             )
         }
-        drawSurvivor(R.drawable.survivor_engineer, cw*.48f + patrol, ch*.72f)
-        drawSurvivor(R.drawable.survivor_medic, cw*1.43f - patrol, ch*.70f)
-        drawSurvivor(R.drawable.survivor_guard, cw*.48f - patrol*.7f, ch*1.72f)
-        drawSurvivor(R.drawable.survivor_farmer, cw*1.43f + patrol*.7f, ch*1.70f)
-        drawSurvivor(R.drawable.survivor_scientist, cw*.48f + patrol*.6f, ch*2.72f)
-        drawSurvivor(R.drawable.survivor_mechanic, cw*1.43f - patrol*.6f, ch*2.70f)
+        drawSurvivor(survivorArts[0], cw*.48f + patrol, ch*.72f)
+        drawSurvivor(survivorArts[1], cw*1.43f - patrol, ch*.70f)
+        drawSurvivor(survivorArts[2], cw*.48f - patrol*.7f, ch*1.72f)
+        drawSurvivor(survivorArts[3], cw*1.43f + patrol*.7f, ch*1.70f)
+        drawSurvivor(survivorArts[4], cw*.48f + patrol*.6f, ch*2.72f)
+        drawSurvivor(survivorArts[5], cw*1.43f - patrol*.6f, ch*2.70f)
         // overhead status lights
         drawCircle(Neon, 3f, Offset(size.width-15f, 14f))
         drawCircle(Amber, 3f, Offset(size.width-26f, 14f))
