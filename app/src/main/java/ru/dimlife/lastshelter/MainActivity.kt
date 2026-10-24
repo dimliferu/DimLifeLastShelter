@@ -1,6 +1,7 @@
 package ru.dimlife.lastshelter
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -44,6 +45,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -190,20 +192,20 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
     val motion = rememberInfiniteTransition(label = "shelter-motion")
     val walkPhase by motion.animateFloat(initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(2400)), label = "walk-phase")
     val roomArts = remember(context) { listOf(
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_reactor),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_command),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_living),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_water),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_farm),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_medical)
+        BitmapFactory.decodeResource(context.resources, R.drawable.room_reactor).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.room_command).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.room_living).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.room_water).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.room_farm).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.room_medical).asImageBitmap()
     ) }
     val survivorArts = remember(context) { listOf(
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_engineer),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_medic),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_guard),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_farmer),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_scientist),
-        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_mechanic)
+        BitmapFactory.decodeResource(context.resources, R.drawable.survivor_engineer).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.survivor_medic).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.survivor_guard).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.survivor_farmer).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.survivor_scientist).asImageBitmap(),
+        BitmapFactory.decodeResource(context.resources, R.drawable.survivor_mechanic).asImageBitmap()
     ) }
     Canvas(
         Modifier.fillMaxSize().background(Color(0xFF080E0A), RoundedCornerShape(12.dp))
