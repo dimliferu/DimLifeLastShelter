@@ -214,34 +214,21 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
             val w = cw - 10f
             val h = ch - 10f
             val isBuilt = i == 0 || i == 1 || (i == 3 && builtWater) || (i == 4 && builtFarm) || (i == 5 && builtMed)
-            val floor = if (isBuilt) FloorLight else Color(0xFF111813)
-            drawRoundRect(floor, Offset(left,top), Size(w,h), CornerRadius(8f))
+            val art = when (i) {
+                0 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_reactor)
+                1 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_command)
+                2 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_living)
+                3 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_water)
+                4 -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_farm)
+                else -> androidx.compose.ui.graphics.ImageBitmap.imageResource(R.drawable.room_medical)
+            }
+            drawImage(
+                image = art,
+                dstOffset = androidx.compose.ui.unit.IntOffset(left.toInt(), top.toInt()),
+                dstSize = androidx.compose.ui.unit.IntSize(w.toInt(), h.toInt())
+            )
             drawRoundRect(if (i == selected) Neon else if (isBuilt) Color(0xFF52765A) else Color(0xFF29382D),
-                Offset(left,top), Size(w,h), CornerRadius(8f), style = Stroke(if (i == selected) 3f else 1.4f))
-            // Layered industrial walls, metal floor plates, overhead conduit and ceiling lights.
-            drawRoundRect(Color(0xFF26352B), Offset(left+4f,top+5f), Size(w-8f,h*.17f), CornerRadius(4f))
-            for (j in 1..4) drawLine(Color(0xFF314238), Offset(left+8f,top+h*j/5f), Offset(left+w-8f,top+h*j/5f), 1f)
-            drawLine(Color(0xFF63766A), Offset(left+7f,top+5f), Offset(left+w-7f,top+5f), 2f)
-            drawLine(Color(0xFF516457), Offset(left+8f,top+h*.15f), Offset(left+w-8f,top+h*.15f), 2f)
-            // Small ceiling lamps and wall-mounted service panels.
-            for (lamp in 0..2) {
-                val lx=left+w*(.22f+lamp*.28f)
-                drawRoundRect(Color(0xFF9CB6A2), Offset(lx,top+8f), Size(w*.12f,3f), CornerRadius(2f))
-                drawRoundRect(Neon.copy(alpha=.12f), Offset(lx-3f,top+5f), Size(w*.12f+6f,9f), CornerRadius(3f))
-            }
-            drawRoundRect(Color(0xFF0A120D), Offset(left+w*.04f,top+h*.22f), Size(w*.07f,h*.18f), CornerRadius(2f))
-            drawRoundRect(Color(0xFF53685A), Offset(left+w*.05f,top+h*.24f), Size(w*.05f,h*.12f), CornerRadius(2f))
-            // wall braces
-            drawLine(Wall, Offset(left+4f,top+4f), Offset(left+w-4f,top+4f), 3f)
-            when (i) {
-                0 -> drawReactor(left, top, w, h)
-                1 -> drawCommandDesk(left, top, w, h)
-                2 -> drawBeds(left, top, w, h)
-                3 -> if (builtWater) drawMachine(left, top, w, h, Blue) else drawCrates(left, top, w, h)
-                4 -> if (builtFarm) drawFarm(left, top, w, h) else drawCrates(left, top, w, h)
-                5 -> if (builtMed) drawMedical(left, top, w, h) else drawCrates(left, top, w, h)
-            }
-            drawDoor(left+w*.42f, top+h-2f, w*.16f, Neon.copy(alpha=.8f))
+                Offset(left,top), Size(w,h), CornerRadius(8f), style = Stroke(if (i == selected) 3f else 1.2f))
             val label = when (i) { 0 -> "РЕАКТОР"; 1 -> "УПРАВЛЕНИЕ"; 2 -> "ЖИЛОЙ БЛОК"; 3 -> "ВОДА"; 4 -> "ФЕРМА"; else -> "МЕДБЛОК" }
             drawContext.canvas.nativeCanvas.drawText(label, left+w/2, top+h-12f,
                 android.graphics.Paint().apply { color = if (isBuilt) android.graphics.Color.rgb(130,255,150) else android.graphics.Color.rgb(132,151,137); textSize = min(11f, cw/13f); textAlign = android.graphics.Paint.Align.CENTER; typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD) })
@@ -252,12 +239,19 @@ private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean,
         drawCircle(Neon, 4f, Offset(cw,ch))
         // Animated residents patrol connected rooms
         val patrol = (walkPhase - .5f) * cw * .30f
-        drawPerson(cw*.48f + patrol, ch*.72f, Neon, 1.9f)
-        drawPerson(cw*1.43f - patrol, ch*.70f, Blue, 1.85f)
-        drawPerson(cw*.48f - patrol*.7f, ch*1.72f, Amber, 1.9f)
-        drawPerson(cw*1.43f + patrol*.7f, ch*1.70f, Neon, 1.85f)
-        drawPerson(cw*.48f + patrol*.6f, ch*2.72f, Blue, 1.9f)
-        drawPerson(cw*1.43f - patrol*.6f, ch*2.70f, Amber, 1.85f)
+        fun drawSurvivor(resId: Int, x: Float, y: Float, width: Int = 42, height: Int = 62) {
+            drawImage(
+                image = androidx.compose.ui.graphics.ImageBitmap.imageResource(resId),
+                dstOffset = androidx.compose.ui.unit.IntOffset((x-width/2f).toInt(), (y-height/2f).toInt()),
+                dstSize = androidx.compose.ui.unit.IntSize(width, height)
+            )
+        }
+        drawSurvivor(R.drawable.survivor_engineer, cw*.48f + patrol, ch*.72f)
+        drawSurvivor(R.drawable.survivor_medic, cw*1.43f - patrol, ch*.70f)
+        drawSurvivor(R.drawable.survivor_guard, cw*.48f - patrol*.7f, ch*1.72f)
+        drawSurvivor(R.drawable.survivor_farmer, cw*1.43f + patrol*.7f, ch*1.70f)
+        drawSurvivor(R.drawable.survivor_scientist, cw*.48f + patrol*.6f, ch*2.72f)
+        drawSurvivor(R.drawable.survivor_mechanic, cw*1.43f - patrol*.6f, ch*2.70f)
         // overhead status lights
         drawCircle(Neon, 3f, Offset(size.width-15f, 14f))
         drawCircle(Amber, 3f, Offset(size.width-26f, 14f))
