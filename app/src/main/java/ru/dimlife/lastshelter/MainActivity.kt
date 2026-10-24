@@ -396,3 +396,118 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMedical(x: Floa
     drawLine(Red,Offset(x+w*.35f,y+h*.775f),Offset(x+w*.35f,y+h*.825f),3f)
     drawLine(Red,Offset(x+w*.32f,y+h*.80f),Offset(x+w*.38f,y+h*.80f),3f)
 }
+
+@Composable
+private fun SelectedRoom(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, message: String) {
+    val name = roomNames[selected]
+    val status = when (selected) {
+        0 -> "РЕАКТОР • МОЩНОСТЬ 84% • ОБСЛУЖИВАНИЕ ДОСТУПНО"
+        1 -> "КОМАНДНЫЙ ЦЕНТР • СТАТУС: АКТИВЕН"
+        2 -> "ЖИЛОЙ БЛОК • 4 КОЙКИ • СМЕНА ДЕЖУРИТ"
+        3 -> if (builtWater) "ФИЛЬТР ВОДЫ • ПРОИЗВОДИТЕЛЬНОСТЬ НОРМА" else "НЕ ПОСТРОЕНО • ОТКРОЙ РАЗДЕЛ СТРОИТЕЛЬСТВА"
+        4 -> if (builtFarm) "ГИДРОПОНИКА • РАСТЕНИЯ РАСТУТ" else "НЕ ПОСТРОЕНО • ПРОВИЗИЯ НА ИСХОДЕ"
+        else -> if (builtMed) "МЕДБЛОК • ГОТОВ К ПРИЁМУ" else "НЕ ПОСТРОЕНО • МЕДИЦИНСКАЯ ПОМОЩЬ НЕДОСТУПНА"
+    }
+    Column(Modifier.fillMaxWidth().background(Color(0xFF0E1711)).padding(horizontal=14.dp, vertical=9.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).background(if (selected < 3 || (selected==3 && builtWater) || (selected==4 && builtFarm) || (selected==5 && builtMed)) Neon else Amber, RoundedCornerShape(4.dp)))
+            Spacer(Modifier.width(7.dp))
+            Text(name, color = TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Black)
+        }
+        Text(status, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+    }
+}
+
+@Composable
+private fun ResourceStrip(power: Int, water: Int, oxygen: Int, food: Int) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        MiniResource("⚡", power, Modifier.weight(1f))
+        MiniResource("◈", water, Modifier.weight(1f))
+        MiniResource("◎", oxygen, Modifier.weight(1f))
+        MiniResource("▦", food, Modifier.weight(1f))
+    }
+}
+@Composable
+private fun MiniResource(icon: String, value: Int, modifier: Modifier) {
+    Column(modifier.background(Color(0xFF121B15), RoundedCornerShape(8.dp)).padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(icon, color = Neon, fontSize = 13.sp)
+        Text("$value%", color = if (value < 20) Red else TextWhite, fontSize = 12.sp, fontWeight = FontWeight.Black)
+        Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0xFF29352C), RoundedCornerShape(2.dp))) {
+            Box(Modifier.fillMaxWidth(value.coerceIn(0,100)/100f).height(3.dp).background(if (value<20) Red else Neon, RoundedCornerShape(2.dp)))
+        }
+    }
+}
+
+@Composable
+private fun BuildScreen(scrap: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, build: (Int) -> Unit) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp)) {
+        Text("МОДЕРНИЗАЦИЯ УБЕЖИЩА", color = Neon, fontSize = 17.sp, fontWeight = FontWeight.Black)
+        Text("Металлолом: $scrap  •  Выбирай модули, которые помогут выжить.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
+        Spacer(Modifier.height(14.dp))
+        BuildCard("◈", "ФИЛЬТРАЦИЯ ВОДЫ", "Снижает расход воды каждый день.", 20, builtWater) { build(0) }
+        BuildCard("▥", "ГИДРОПОННАЯ ФЕРМА", "Производит провизию для выживших.", 30, builtFarm) { build(1) }
+        BuildCard("+", "МЕДИЦИНСКИЙ БЛОК", "Нужен для лечения и будущих событий.", 35, builtMed) { build(2) }
+        Spacer(Modifier.height(12.dp))
+        Text("Следующие модули: оружейная, мастерская, лаборатория и жилые капсулы.", color = Muted, fontSize = 12.sp, lineHeight = 18.sp)
+    }
+}
+@Composable
+private fun BuildCard(icon: String, title: String, desc: String, cost: Int, built: Boolean, action: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp).background(Color(0xFF121B15), RoundedCornerShape(12.dp)).border(1.dp, if (built) Neon.copy(alpha=.45f) else Wall, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(48.dp).background(Color(0xFF203326), RoundedCornerShape(9.dp)), contentAlignment = Alignment.Center) { Text(icon, color = Neon, fontSize = 24.sp, fontWeight = FontWeight.Black) }
+        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+            Text(title, color = TextWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            Text(desc, color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+            Text(if (built) "УСТАНОВЛЕНО" else "◈ $cost МЕТАЛЛА", color = if (built) Neon else Amber, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        }
+        if (built) Text("✓", color = Neon, fontSize = 20.sp) else Button(onClick=action, colors=ButtonDefaults.buttonColors(containerColor=Neon,contentColor=Void)) { Text("СТРОИТЬ", fontSize=9.sp,fontWeight=FontWeight.Black) }
+    }
+}
+@Composable
+private fun SurfaceScreen(scrap: Int, survivors: Int, onExplore: () -> Unit) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("ЗАПРЕТНАЯ ЗОНА", color = Neon, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("ПОВЕРХНОСТЬ • СЕКТОР 7G", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Canvas(Modifier.fillMaxWidth().height(240.dp).background(Color(0xFF09120D), RoundedCornerShape(12.dp))) {
+            val w=size.width; val h=size.height
+            for (i in 0..12) drawLine(Color(0xFF18301E),Offset(w*i/12f,0f),Offset(w*i/12f,h),1f)
+            for (i in 0..8) drawLine(Color(0xFF18301E),Offset(0f,h*i/8f),Offset(w,h*i/8f),1f)
+            val buildings=listOf(floatArrayOf(.04f,.48f,.16f,.52f),floatArrayOf(.23f,.2f,.18f,.8f),floatArrayOf(.45f,.4f,.14f,.6f),floatArrayOf(.63f,.12f,.19f,.88f),floatArrayOf(.84f,.36f,.13f,.64f))
+            buildings.forEachIndexed { i,b ->
+                val x=w*b[0]; val y=h*b[1]; val bw=w*b[2]; val bh=h*b[3]
+                drawRect(Color(0xFF1C2B21),Offset(x,y),Size(bw,bh))
+                drawRect(Color(0xFF506354),Offset(x,y),Size(bw,bh),style=Stroke(2f))
+                for (r in 1..4) for (c in 1..2) drawRect(if ((r+c+i)%3==0) Amber.copy(alpha=.6f) else Color(0xFF354A39),Offset(x+bw*c/3,y+bh*r/5),Size(4f,5f))
+            }
+            drawCircle(Neon.copy(alpha=.12f),55f,Offset(w*.5f,h*.57f))
+            drawCircle(Neon,55f,Offset(w*.5f,h*.57f),style=Stroke(2f))
+            drawCircle(Neon,4f,Offset(w*.5f,h*.57f))
+            drawLine(Neon,Offset(w*.5f-70,h*.57f),Offset(w*.5f+70,h*.57f),1f)
+            drawLine(Neon,Offset(w*.5f,h*.57f-70),Offset(w*.5f,h*.57f+70),1f)
+            drawPerson(w*.5f,h*.57f,Amber,1.2f)
+        }
+        Text("Радиация нестабильна. Сканер засёк металл и слабый сигнал в руинах. Экспедиция может принести ресурсы.", color = TextWhite, fontSize = 13.sp, lineHeight = 20.sp)
+        Text("МЕТАЛЛОЛОМ В ХРАНИЛИЩЕ: $scrap  •  ВЫЖИВШИЕ: $survivors", color = Amber, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        GameButton("↗  ОТПРАВИТЬ ЭКСПЕДИЦИЮ", Modifier.fillMaxWidth(), Neon, onExplore)
+    }
+}
+@Composable
+private fun GameButton(label: String, modifier: Modifier, color: Color, action: () -> Unit) {
+    Button(onClick=action,modifier=modifier.height(48.dp),colors=ButtonDefaults.buttonColors(containerColor=color,contentColor=Void),shape=RoundedCornerShape(8.dp)) {
+        Text(label,fontSize=10.sp,fontWeight=FontWeight.Black,textAlign=TextAlign.Center)
+    }
+}
+@Composable
+private fun BottomBar(selected: String, onSelect: (String)->Unit) {
+    val items=listOf("УБЕЖИЩЕ" to "⌂","СТРОИТЬ" to "▦","ПОВЕРХНОСТЬ" to "↗","ЖУРНАЛ" to "≡")
+    Row(Modifier.fillMaxWidth().background(Color(0xFF111914)).padding(horizontal=5.dp,vertical=5.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+        items.forEach { (label,icon) ->
+            val active=label==selected
+            Column(Modifier.weight(1f).background(if(active) Color(0xFF25442D) else Color.Transparent,RoundedCornerShape(8.dp)).clickable { onSelect(label) }.padding(vertical=8.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                Text(icon,color=if(active) Neon else Muted,fontSize=18.sp,fontWeight=FontWeight.Black)
+                Text(label,color=if(active) Neon else Muted,fontSize=8.sp,fontWeight=FontWeight.Black)
+            }
+        }
+    }
+}
+
