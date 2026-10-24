@@ -186,24 +186,25 @@ private fun Header(day: Int, scrap: Int, survivors: Int) {
 
 @Composable
 private fun ShelterWorld(selected: Int, builtWater: Boolean, builtFarm: Boolean, builtMed: Boolean, onSelect: (Int) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val motion = rememberInfiniteTransition(label = "shelter-motion")
     val walkPhase by motion.animateFloat(initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(2400)), label = "walk-phase")
-    val roomArts = listOf(
-        androidx.compose.ui.res.imageResource(id = R.drawable.room_reactor),
-        androidx.compose.ui.res.imageResource(id = R.drawable.room_command),
-        androidx.compose.ui.res.imageResource(id = R.drawable.room_living),
-        androidx.compose.ui.res.imageResource(id = R.drawable.room_water),
-        androidx.compose.ui.res.imageResource(id = R.drawable.room_farm),
-        androidx.compose.ui.res.imageResource(id = R.drawable.room_medical)
-    )
-    val survivorArts = listOf(
-        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_engineer),
-        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_medic),
-        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_guard),
-        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_farmer),
-        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_scientist),
-        androidx.compose.ui.res.imageResource(id = R.drawable.survivor_mechanic)
-    )
+    val roomArts = remember(context) { listOf(
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_reactor),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_command),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_living),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_water),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_farm),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.room_medical)
+    ) }
+    val survivorArts = remember(context) { listOf(
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_engineer),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_medic),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_guard),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_farmer),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_scientist),
+        androidx.compose.ui.graphics.ImageBitmap.imageResource(context.resources, R.drawable.survivor_mechanic)
+    ) }
     Canvas(
         Modifier.fillMaxSize().background(Color(0xFF080E0A), RoundedCornerShape(12.dp))
             .border(1.dp, Color(0xFF354A3A), RoundedCornerShape(12.dp))
